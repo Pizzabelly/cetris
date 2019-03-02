@@ -5,9 +5,9 @@
 #include "cetris.h"
 
 #define BLOCK "[]"
-#define BOARD_TOP    "/------------------\\"
-#define BOARD_MID    "|                  |"
-#define BOARD_BOTTOM "\\------------------/"
+#define BOARD_TOP    "/--------------------\\"
+#define BOARD_MID    "|                    |"
+#define BOARD_BOTTOM "\\--------------------/"
 
 //static int term_x, term_y;
 
@@ -17,7 +17,7 @@ void curses_init() {
   noecho();
   keypad(stdscr, TRUE);
   curs_set(0);
-  timeout(32);
+  timeout(1000 / 60);
 
   //resize_term(20, 50);
 
@@ -29,35 +29,45 @@ void curses_init() {
   clear();
 }
 
-void draw_board() {
-  for (int y = 0; y < BOARD_Y + 1; y++) {
+void draw_board(struct cetris_game* g) {
+  for (int y = 0; y < BOARD_Y + 2; y++) {
     if (y == 0) 
       mvaddstr(y, 10, BOARD_TOP);
-    else if (y == BOARD_Y) 
+    else if (y == BOARD_Y + 1) 
       mvaddstr(y, 10, BOARD_BOTTOM);
     else 
       mvaddstr(y, 10, BOARD_MID);
   }
   for (int x = 0; x < BOARD_X; x++) {
     for (int y = 0; y < BOARD_Y; y++) {
-      if (g.board[x][y]) 
-        mvaddstr(y, x * 2 + 10, BLOCK);
+      if (g->board[x][y].occupied) 
+        mvaddstr(y + 1, x * 2 + 11, BLOCK);
     }
   }
 }
 
 int main(void) {
   curses_init();
-  add_piece(L);
+
+  struct cetris_game game;
+  init_game(&game);
+
   int c;
   while(1) {
     c = getch();
     switch (c) {
-      case 'q':
-        endwin();
-        exit(1);
+      case 'q': endwin(); exit(1);
+      case 'a':
+        move_left(&game); break;
+      case 'd':
+        move_right(&game); break;
+      case 's':
+        move_down(&game); break;
+      case 'w':
+        rotate_clockwise(&game); break;
     }
-    draw_board();
+    update_game_tick(&game);
+    draw_board(&game);
     refresh();
   }
   return 0;
