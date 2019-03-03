@@ -37,9 +37,7 @@ void curses_init() {
   noecho();
   keypad(stdscr, TRUE);
   curs_set(0);
-  timeout(1000 / 60);
-
-  //resize_term(20, 50);
+  timeout(1000 / CETRIS_HZ);
 
   start_color();
   init_pair(0, COLOR_MAGENTA, COLOR_BLACK);
@@ -53,8 +51,15 @@ void draw_board(struct cetris_game* g) {
   mvaddstr(0, 0, PLAY_FIELD_STR);
   for (int x = 0; x < BOARD_X; x++) {
     for (int y = 0; y < BOARD_Y; y++) {
-      if (g->board[x][y].occupied) 
-        mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
+      if (g->board[x][y].occupied) {
+        if (g->board[x][y].remove_tick > 0) {
+          if (g->tick % 2 == 0) {
+            mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
+          }
+        } else {
+          mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
+        }
+      }
     }
   }
 }

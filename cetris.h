@@ -4,6 +4,7 @@
 #define CETRIS_HZ 60
 #define CETRIS_DAS_DELAY 11
 #define CETRIS_DAS_PERIOD 5
+#define CETRIS_LINE_CLEAR_DELAY 40
 
 typedef struct {
   int x;
@@ -25,6 +26,7 @@ struct tetrimino {
 typedef struct {
   int occupied;
   int constant;
+  int remove_tick;
 } slot;
 
 enum movements {

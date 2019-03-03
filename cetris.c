@@ -297,28 +297,33 @@ void set_constants(struct cetris_game* g) {
   }
 }
 
+void reset_slot(slot* s) {
+  s->occupied = 0;
+  s->constant = 0;
+  s->remove_tick = 0;
+}
+
 void wipe_board(struct cetris_game* g) {
   int lines_cleared = 0;
   for (int y = 0; y < BOARD_Y; y++) {
     int clear_line = 1;
 
     for (int x = 0; x < BOARD_X; x++) {
-      if (!g->board[x][y].constant) g->board[x][y].occupied = 0;
-      if (!g->board[x][y].occupied) clear_line = 0;
+      if (!g->board[x][y].constant) reset_slot(&g->board[x][y]);
+      if (g->board[x][y].remove_tick && g->board[x][y].remove_tick <= g->tick) {
+        reset_slot(&g->board[x][y]);
+        for (int s = y - 1; s >= 0; s--) {
+          g->board[x][s + 1] = g->board[x][s];
+        }
+      }
+      if (!g->board[x][y].occupied || g->board[x][y].remove_tick > 0) clear_line = 0;
     }
 
     if (clear_line) {
       lines_cleared++;
 
       for (int x = 0; x < BOARD_X; x++) {
-        g->board[x][y].occupied = 0;
-        g->board[x][y].constant = 0;
-      }
-
-      for (int s = y - 1; s >= 0; s--) {
-        for (int x = 0; x < BOARD_X; x++) {
-          g->board[x][s + 1] = g->board[x][s];
-        }
+        g->board[x][y].remove_tick = g->tick + CETRIS_LINE_CLEAR_DELAY;
       }
     }
   }
