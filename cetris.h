@@ -15,10 +15,18 @@ typedef enum {
   O, I, S, Z, L, J, T
 } type;
 
+typedef enum {
+  INIT,
+  RRIGHT,
+  RLEFT,
+  TWO
+} rstate;
+
 typedef int piece_matrix[4][4];
 
 struct tetrimino {
   type t;
+  rstate r;
   piece_matrix mat;
   vec2 pos;
 };

@@ -17,13 +17,13 @@ void move_right(struct cetris_game* g);
 void move_hard_drop(struct cetris_game* g);
 void rotate_clockwise(struct cetris_game* g);
 static void init_piece_queue(struct cetris_game* g);
-static void suffle_queue(struct cetris_game* g);
+static void shuffle_queue(struct cetris_game* g);
 static void next_piece(struct cetris_game* g);
 static void move_current(struct cetris_game* g, vec2 offset);
 static int check_new_matrix(struct cetris_game* g, piece_matrix m);
 static void wipe_board(struct cetris_game* g);
 static void set_constants(struct cetris_game* g);
-static void rotate_matrix(struct cetris_game* g);
+static void rotate_matrix(struct cetris_game* g, int clockwise);
 static void clear_move_queue(struct cetris_game* g);
 //static void add_score(struct cetris_game* g);
 
@@ -80,6 +80,31 @@ static const piece_matrix default_matrices[7] = {
   }
 };
 
+/* SRS WALL KICK VALUES */
+
+// https://tetris.wiki/SRS
+static const vec2 srs_wall_kicks[8][5] = {
+  { {0, 0}, {-1, 0}, {-1,1},  {0,-2}, {-1,-2} }, // 0->R
+  { {0, 0}, {1, 0},  {1,-1},  {0,2},  {1,2}   }, // R->0
+  {	{0, 0}, {1, 0},  {1,-1},  {0,2},  {1,2}   }, // R->2
+  {	{0, 0}, {-1, 0}, {-1,1},  {0,-2}, {-1,-2} }, // 2->R
+  {	{0, 0}, {1, 0},  {1,1},   {0,-2}, {1,-2}  }, // 2->L
+  {	{0, 0}, {-1, 0}, {-1,-1}, {0,2},  {-1,2}  }, // L->2
+  {	{0, 0}, {-1, 0}, {-1,-1}, {0,2},  {-1,2}  }, // L->0
+  {	{0, 0}, {1, 0},  {1,1},   {0,-2}, {1,-2}  }  // 0->L
+};
+
+static const vec2 srs_wall_kicks_i[8][5] = {
+  { {0, 0},	{-2, 0}, {1, 0},  {-2,-1}, {1,2}   }, // 0->R
+  { {0, 0},	{2, 0},  {-1, 0},	{2,1},   {-1,-2} }, // R->0
+  { {0, 0},	{-1, 0}, {2, 0},  {-1,2},  {2,-1}  }, // R->2
+  { {0, 0},	{1, 0},  {-2, 0},	{1,-2},  {-2,1}  }, // 2->R
+  { {0, 0},	{2, 0},  {-1, 0},	{2,1},   {-1,-2} }, // 2->L
+  { {0, 0},	{-2, 0}, {1, 0},  {-2,-1}, {1,2}   }, // L->2
+  { {0, 0},	{1, 0},  {-2, 0}, {1,-2},  {-2,1}  }, // L->0
+  { {0, 0},	{-1, 0}, {2, 0},  {-1,2},  {2,-1}  }  // 0->L
+};
+  
 /* MATRIX MODIFICATION */
 
 void move_current(struct cetris_game* g, vec2 offset) {
@@ -135,11 +160,27 @@ void move_left(struct cetris_game* g) {
   }
 }
 
-void rotate_matrix(struct cetris_game* g) {
+void rotate_matrix(struct cetris_game* g, int clockwise) {
   if (g->current.t == O) return;
 
   piece_matrix m;
   memset(m, 0, sizeof(piece_matrix));
+
+  rstate next;
+  switch (g->current.r) {
+    case INIT:
+     next = (clockwise) ? RRIGHT : RLEFT;
+     break;
+    case RRIGHT: 
+     next = (clockwise) ? TWO : INIT;
+     break;
+    case RLEFT:
+     next = (clockwise) ? INIT : TWO;
+     break;
+    case TWO:
+     next = (clockwise) ? RLEFT : RRIGHT;
+     break;
+  }
 
   for (int x = 0; x < 4; x++) {
     for (int y = 0; y < 4; y++) {
@@ -152,17 +193,49 @@ void rotate_matrix(struct cetris_game* g) {
     }
   }
 
-  if (check_new_matrix(g, m) > 0) {
+  int wall_kick;
+  switch (g->current.r) {
+    case INIT:
+      wall_kick = (next == RRIGHT) ? 0 : 7;
+      break;
+    case RRIGHT:
+      wall_kick = (next == INIT) ? 1 : 2;
+      break;
+    case RLEFT:
+      wall_kick = (next == INIT) ? 6 : 5;
+      break;
+    case TWO:
+      wall_kick = (next == RRIGHT) ? 3 : 4;
+      break;
+  }
+
+  int set_current = 0;
+  for (int i = 0; i < 6; i++) {
+    vec2 kick = (vec2){0, 0};
+    if (i > 0) {
+      if (g->current.t == I) kick = srs_wall_kicks_i[wall_kick][i - 1];
+      else kick = srs_wall_kicks[wall_kick][i - 1];
+    }
+    g->current.pos.x += kick.x;
+    g->current.pos.y += kick.y;
+    if (check_new_matrix(g, m) > 0) {
+      set_current = 1; break;
+    } else {
+      g->current.pos.x -= kick.x;
+      g->current.pos.y -= kick.y;
+    }
+  }
+
+  if (set_current) { 
+    g->current.r = next;
     memcpy(g->current.mat, m, sizeof(piece_matrix));
   }
 }
 
 void rotate_clockwise(struct cetris_game* g) {
-  rotate_matrix(g);
+  rotate_matrix(g, 1);
 }
 
-/* takes a possible new matrix for the current piece and 
- * returns 1 if it is allowed, -1 if it should stop */
 int check_new_matrix(struct cetris_game* g, piece_matrix m) {
   vec2 r;
   for (int x = 0; x < 4; x++) {
@@ -197,7 +270,7 @@ void init_game(struct cetris_game* g) {
   g->level = 0;
 
   init_piece_queue(g);
-  suffle_queue(g);
+  shuffle_queue(g);
 
   next_piece(g);
 }
@@ -224,7 +297,7 @@ void init_piece_queue(struct cetris_game* g) {
   }
 }
 
-void suffle_queue(struct cetris_game* g) {
+void shuffle_queue(struct cetris_game* g) {
   for (int i = 0; i < 7; i++) {
     struct tetrimino t = g->piece_queue[i];
     int rand_index = rand() % 7;
@@ -280,9 +353,9 @@ void next_piece(struct cetris_game* g) {
 
   set_constants(g);
 
-  if (g->current_index == 6) {
+  if (g->current_index >= 7) {
     g->current_index = 0;
-    suffle_queue(g);
+    shuffle_queue(g);
   }
 
   g->current = g->piece_queue[g->current_index];
