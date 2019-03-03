@@ -210,7 +210,7 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
   }
 
   int set_current = 0;
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 5; i++) {
     vec2 kick = (vec2){0, 0};
     if (i > 0) {
       if (g->current.t == I) kick = srs_wall_kicks_i[wall_kick][i - 1];
@@ -370,21 +370,17 @@ void set_constants(struct cetris_game* g) {
   }
 }
 
-void reset_slot(slot* s) {
-  s->occupied = 0;
-  s->constant = 0;
-  s->remove_tick = 0;
-}
-
 void wipe_board(struct cetris_game* g) {
   int lines_cleared = 0;
   for (int y = 0; y < BOARD_Y; y++) {
     int clear_line = 1;
 
     for (int x = 0; x < BOARD_X; x++) {
-      if (!g->board[x][y].constant) reset_slot(&g->board[x][y]);
+      if (!g->board[x][y].constant) { 
+        memset(&g->board[x][y], 0, sizeof(slot));
+      }
       if (g->board[x][y].remove_tick && g->board[x][y].remove_tick <= g->tick) {
-        reset_slot(&g->board[x][y]);
+        memset(&g->board[x][y], 0, sizeof(slot));
         for (int s = y - 1; s >= 0; s--) {
           g->board[x][s + 1] = g->board[x][s];
         }
