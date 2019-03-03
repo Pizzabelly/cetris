@@ -16,6 +16,7 @@ void move_left(struct cetris_game* g);
 void move_right(struct cetris_game* g);
 void move_hard_drop(struct cetris_game* g);
 void rotate_clockwise(struct cetris_game* g);
+void rotate_counterclockwise(struct cetris_game* g);
 static void init_piece_queue(struct cetris_game* g);
 static void shuffle_queue(struct cetris_game* g);
 static void next_piece(struct cetris_game* g);
@@ -185,9 +186,12 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
   for (int x = 0; x < 4; x++) {
     for (int y = 0; y < 4; y++) {
       if (g->current.mat[y][x]) {
-        int new_x = 1 - (y - 2);
-        int new_y = 2 + (x - 1);
-        if (g->current.t == I) new_y--;
+        int new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
+        int new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
+        if (g->current.t == I) {
+          if (clockwise) new_y--;
+          else new_x++;
+        }
         m[new_y][new_x] = 1;
       }
     }
@@ -234,6 +238,10 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
 
 void rotate_clockwise(struct cetris_game* g) {
   rotate_matrix(g, 1);
+}
+
+void rotate_counterclockwise(struct cetris_game* g) {
+  rotate_matrix(g, 0);
 }
 
 int check_new_matrix(struct cetris_game* g, piece_matrix m) {
