@@ -59,4 +59,5 @@ void update_game_tick(struct cetris_game* g);
 void move_down(struct cetris_game* g);
 void move_left(struct cetris_game* g);
 void move_right(struct cetris_game* g);
+void move_hard_drop(struct cetris_game* g);
 void rotate_clockwise(struct cetris_game* g);

@@ -14,6 +14,7 @@ void update_game_tick(struct cetris_game* g);
 void move_down(struct cetris_game* g);
 void move_left(struct cetris_game* g);
 void move_right(struct cetris_game* g);
+void move_hard_drop(struct cetris_game* g);
 void rotate_clockwise(struct cetris_game* g);
 static void init_piece_queue(struct cetris_game* g);
 static void suffle_queue(struct cetris_game* g);
@@ -91,12 +92,26 @@ void move_current(struct cetris_game* g, vec2 offset) {
     g->current.pos.x -= offset.x;
 
     if (check == -1) {
-      set_constants(g);
       next_piece(g);
     }
     
     clear_move_queue(g);
   }
+}
+
+void move_hard_drop(struct cetris_game* g) {
+  int drop = 0;
+  while (!drop) {
+    g->current.pos.y++;
+    int check = check_new_matrix(g, g->current.mat);
+    if (check <= 0) {
+      g->current.pos.y--;
+      drop = 1;
+    }
+  }
+
+  wipe_board(g);
+  next_piece(g);
 }
 
 void move_down(struct cetris_game* g) {
@@ -236,7 +251,6 @@ void update_game_tick(struct cetris_game* g) {
       }
     } else {
       clear_move_queue(g);
-      g->move_queue[g->move_queue_pos] = current_move;
     }
   }
   
@@ -262,6 +276,10 @@ void update_game_tick(struct cetris_game* g) {
 }
 
 void next_piece(struct cetris_game* g) {
+  clear_move_queue(g);
+
+  set_constants(g);
+
   if (g->current_index == 6) {
     g->current_index = 0;
     suffle_queue(g);

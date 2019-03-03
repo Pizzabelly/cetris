@@ -70,14 +70,16 @@ int main(void) {
     c = getch();
     switch (c) {
       case 'q': endwin(); exit(1);
-      case 'a':
+      case KEY_LEFT:
         move_left(&game); break;
-      case 'd':
+      case KEY_RIGHT:
         move_right(&game); break;
-      case 's':
+      case KEY_DOWN:
         move_down(&game); break;
-      case 'w':
+      case KEY_UP:
         rotate_clockwise(&game); break;
+      case ' ':
+        move_hard_drop(&game);
     }
     update_game_tick(&game);
     draw_board(&game);
