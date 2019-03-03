@@ -3,25 +3,30 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "cetris.h"
 
-/* function  prototypes */
+/* FUNCTION PROTOTYPES */
+
 void init_game(struct cetris_game* g);
 void update_game_tick(struct cetris_game* g);
 void move_down(struct cetris_game* g);
 void move_left(struct cetris_game* g);
 void move_right(struct cetris_game* g);
 void rotate_clockwise(struct cetris_game* g);
-static void init_queue(struct cetris_game* g);
+static void init_piece_queue(struct cetris_game* g);
 static void suffle_queue(struct cetris_game* g);
 static void next_piece(struct cetris_game* g);
 static void move_current(struct cetris_game* g, vec2 offset);
-static void overlay_current(struct cetris_game* g);
 static int check_new_matrix(struct cetris_game* g, piece_matrix m);
 static void wipe_board(struct cetris_game* g);
 static void set_constants(struct cetris_game* g);
 static void rotate_matrix(struct cetris_game* g);
+static void clear_move_queue(struct cetris_game* g);
+//static void add_score(struct cetris_game* g);
+
+/* DEFAULT MATRIX FOR EACH POSSIBLE TETRIMINO */
 
 static const piece_matrix default_matrices[7] = {
   { 
@@ -74,26 +79,121 @@ static const piece_matrix default_matrices[7] = {
   }
 };
 
+/* MATRIX MODIFICATION */
+
+void move_current(struct cetris_game* g, vec2 offset) {
+  g->current.pos.y += offset.y;
+  g->current.pos.x += offset.x;
+
+  int check = check_new_matrix(g, g->current.mat); 
+  if (check <= 0) {
+    g->current.pos.y -= offset.y;
+    g->current.pos.x -= offset.x;
+
+    if (check == -1) {
+      set_constants(g);
+      next_piece(g);
+    }
+    
+    clear_move_queue(g);
+  }
+}
+
+void move_down(struct cetris_game* g) {
+  if (g->move_queue_pos >= g->move_queue_count - 1) {
+    g->move_queue[g->move_queue_count] = DOWN;
+    g->move_queue_count++;
+  }
+}
+
+void move_right(struct cetris_game* g) {
+  if (g->move_queue_pos >= g->move_queue_count - 1) {
+    g->move_queue[g->move_queue_count] = RIGHT;
+    g->move_queue_count++;
+  }
+}
+
+void move_left(struct cetris_game* g) {
+  if (g->move_queue_pos >= g->move_queue_count - 1) {
+    g->move_queue[g->move_queue_count] = LEFT;
+    g->move_queue_count++;
+  }
+}
+
+void rotate_matrix(struct cetris_game* g) {
+  if (g->current.t == O) return;
+
+  piece_matrix m;
+  memset(m, 0, sizeof(piece_matrix));
+
+  for (int x = 0; x < 4; x++) {
+    for (int y = 0; y < 4; y++) {
+      if (g->current.mat[y][x]) {
+        int new_x = 1 - (y - 2);
+        int new_y = 2 + (x - 1);
+        if (g->current.t == I) new_y--;
+        m[new_y][new_x] = 1;
+      }
+    }
+  }
+
+  if (check_new_matrix(g, m) > 0) {
+    memcpy(g->current.mat, m, sizeof(piece_matrix));
+  }
+}
+
+void rotate_clockwise(struct cetris_game* g) {
+  rotate_matrix(g);
+}
+
+/* takes a possible new matrix for the current piece and 
+ * returns 1 if it is allowed, -1 if it should stop */
+int check_new_matrix(struct cetris_game* g, piece_matrix m) {
+  vec2 r;
+  for (int x = 0; x < 4; x++) {
+    for (int y = 0; y < 4; y++) {
+      r = (vec2){g->current.pos.x + x, g->current.pos.y + y};
+      if (m[y][x]) { 
+        if (r.x > BOARD_X - 1 || r.x < 0) return 0;
+
+        if (r.y > BOARD_Y - 1 || r.y < 0) return -1;
+
+        if (g->board[r.x][r.y].occupied && 
+            g->board[r.x][r.y].constant) return -1;
+      }
+    }
+  }
+  return 1;
+}
+
+/* GAME FUNCTIONS */
+
 void init_game(struct cetris_game* g) {
   srand(time(NULL));
+
   memset(g->board, 0, sizeof(slot) * BOARD_X * BOARD_Y);
-  g->tick = 0; g->current_index = 0;
-  init_queue(g);
+
+  g->tick = 0;
+  g->current_index = 0;
+
+  clear_move_queue(g);
+
+  g->lines = 0;
+  g->level = 0;
+
+  init_piece_queue(g);
   suffle_queue(g);
+
   next_piece(g);
 }
 
-void update_game_tick(struct cetris_game* g) {
-  overlay_current(g);
-  int i = g->tick % CETRIS_TICKRATE;
-  int s = CETRIS_TICKRATE / 2;
-  if (i % s == 0) {
-    move_down(g);
-  }
-  g->tick++;
+void clear_move_queue(struct cetris_game* g) {
+  memset(g->move_queue, 0, sizeof(enum movements) * 20);
+  g->move_queue_count = 0;
+  g->move_queue_pos = 0;
 }
 
-void init_queue(struct cetris_game* g) {
+void init_piece_queue(struct cetris_game* g) {
   for (int i = 0; i < 7; i++) {
     switch (i) {
       case 0: g->piece_queue[i].t = O; break;
@@ -118,78 +218,57 @@ void suffle_queue(struct cetris_game* g) {
   }
 }
 
+void update_game_tick(struct cetris_game* g) {
+  wipe_board(g);
+  
+  if ((g->tick % CETRIS_HZ) == 0) move_down(g);
+
+  enum movements current_move = g->move_queue[g->move_queue_pos];
+
+  /* input independedent das movement */
+  int delay = 0;
+  if (g->move_queue_pos > 0) {
+    if (current_move == g->move_queue[g->move_queue_pos - 1]) {
+      if (g->move_queue_pos == 1) {
+        delay = CETRIS_DAS_DELAY;
+      } else {
+        delay = CETRIS_DAS_PERIOD;
+      }
+    } else {
+      clear_move_queue(g);
+      g->move_queue[g->move_queue_pos] = current_move;
+    }
+  }
+  
+  if (!delay || g->tick % delay == 0) {
+    if (current_move > 0) {
+      switch (current_move) {
+        case DOWN:
+          move_current(g, (vec2){0, 1});
+          break;
+        case LEFT: 
+          move_current(g, (vec2){-1, 0});
+          break;
+        case RIGHT:
+          move_current(g, (vec2){1, 0});
+          break;
+      }
+      if (g->move_queue_count != 0) g->move_queue_pos++;
+      if (g->move_queue_pos >= 20) clear_move_queue(g);
+    }
+  }
+
+  g->tick++;
+}
+
 void next_piece(struct cetris_game* g) {
   if (g->current_index == 6) {
     g->current_index = 0;
     suffle_queue(g);
   }
+
   g->current = g->piece_queue[g->current_index];
   g->current_index++;
-}
-
-void move_current(struct cetris_game* g, vec2 offset) {
-  g->current.pos.y += offset.y;
-  g->current.pos.x += offset.x;
-  int check = check_new_matrix(g, g->current.mat); 
-  if (check <= 0) {
-    g->current.pos.y -= offset.y;
-    g->current.pos.x -= offset.x;
-    if (check == -1) {
-      set_constants(g);
-      next_piece(g);
-    }
-  }
-}
-
-void move_down(struct cetris_game* g) {
-  move_current(g, (vec2){0, 1});
-}
-
-void move_right(struct cetris_game* g) {
-  move_current(g, (vec2){1, 0});
-}
-
-void move_left(struct cetris_game* g) {
-  move_current(g, (vec2){-1, 0});
-}
-
-void rotate_matrix(struct cetris_game* g) {
-  if (g->current.t == O) return;
-  piece_matrix m;
-  memset(m, 0, sizeof(piece_matrix));
-  for (int x = 0; x < 4; x++) {
-    for (int y = 0; y < 4; y++) {
-      if (g->current.mat[y][x]) {
-        int new_x = 1 - (y - 2);
-        int new_y = 2 + (x - 1);
-        if (g->current.t == I) new_y--;
-        m[new_y][new_x] = 1;
-      }
-    }
-  }
-  if (check_new_matrix(g, m) > 0) {
-    memcpy(g->current.mat, m, sizeof(piece_matrix));
-  }
-}
-
-void rotate_clockwise(struct cetris_game* g) {
-  rotate_matrix(g);
-}
-
-int check_new_matrix(struct cetris_game* g, piece_matrix m) {
-  vec2 relative;
-  for (int x = 0; x < 4; x++) {
-    for (int y = 0; y < 4; y++) {
-      relative = (vec2){g->current.pos.x + x, g->current.pos.y + y};
-      if (m[y][x]) { 
-        if (relative.x > BOARD_X - 1 || relative.x < 0) return 0;
-        if (relative.y > BOARD_Y - 1 || relative.y < 0) return -1;
-        if (g->board[relative.x][relative.y].occupied && 
-            g->board[relative.x][relative.y].constant) return -1;
-      }
-    }
-  }
-  return 1;
 }
 
 void set_constants(struct cetris_game* g) {
@@ -201,17 +280,23 @@ void set_constants(struct cetris_game* g) {
 }
 
 void wipe_board(struct cetris_game* g) {
+  int lines_cleared = 0;
   for (int y = 0; y < BOARD_Y; y++) {
     int clear_line = 1;
+
     for (int x = 0; x < BOARD_X; x++) {
       if (!g->board[x][y].constant) g->board[x][y].occupied = 0;
       if (!g->board[x][y].occupied) clear_line = 0;
     }
+
     if (clear_line) {
+      lines_cleared++;
+
       for (int x = 0; x < BOARD_X; x++) {
         g->board[x][y].occupied = 0;
         g->board[x][y].constant = 0;
       }
+
       for (int s = y - 1; s >= 0; s--) {
         for (int x = 0; x < BOARD_X; x++) {
           g->board[x][s + 1] = g->board[x][s];
@@ -219,14 +304,29 @@ void wipe_board(struct cetris_game* g) {
       }
     }
   }
-}
 
-void overlay_current(struct cetris_game* g) {
-  wipe_board(g);
-  for (int x = 0; x < 4; x++) {
-    for (int y = 0; y < 4; y++) { 
-      vec2 relative = (vec2){g->current.pos.x + x, g->current.pos.y + y};
-      if (g->current.mat[y][x]) g->board[relative.x][relative.y].occupied = 1;
+  vec2 r;
+  for (int y = 0; y < 4; y++) {
+    for (int x = 0; x < 4; x++) {
+      r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
+      if (g->current.mat[y][x]) {
+        g->board[r.x][r.y].occupied = 1;
+      }
     }
   }
+
+  assert(lines_cleared <= 4);
+  g->lines += lines_cleared;
+  if (g->lines >= (g->level * 10) && g->level <= 20) g->level++;
 }
+
+/*
+void add_score(struct cetris_game* g, int lines) {
+  switch (lines) {
+    case 1: score += 40 * (g->level + 1); break;
+    case 2: score += 100 * (g->level + 1); break;
+    case 3: score += 300 * (g->level + 1); break;
+    case 4: score += 1200 * (g->level + 1); break;
+  }
+}
+*/

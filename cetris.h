@@ -1,7 +1,9 @@
 #define BOARD_X 10
 #define BOARD_Y 20
 
-#define CETRIS_TICKRATE 60
+#define CETRIS_HZ 60
+#define CETRIS_DAS_DELAY 11
+#define CETRIS_DAS_PERIOD 5
 
 typedef struct {
   int x;
@@ -25,6 +27,12 @@ typedef struct {
   int constant;
 } slot;
 
+enum movements {
+  DOWN = 1,
+  LEFT = 2,
+  RIGHT = 3
+};
+
 struct cetris_game {
   slot board[BOARD_X][BOARD_Y];
 
@@ -33,7 +41,17 @@ struct cetris_game {
   struct tetrimino current;
   int current_index;
 
+  enum movements move_queue[20];
+  int move_queue_count;
+  int move_queue_pos;
+
   int tick;
+
+  int lines;
+  int level;
+
+  /* long int just incase */
+  long int score;
 };
 
 void init_game(struct cetris_game* g);

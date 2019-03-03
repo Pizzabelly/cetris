@@ -5,11 +5,31 @@
 #include "cetris.h"
 
 #define BLOCK "[]"
-#define BOARD_TOP    "/--------------------\\"
-#define BOARD_MID    "|                    |"
-#define BOARD_BOTTOM "\\--------------------/"
+#define PLAY_FIELD_STR  "       /--------------------\\    /--------\\\n"\
+                        "       |                    |    |        |\n"\
+                        "       |                    |    \\--------/\n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       |                    |              \n"\
+                        "       \\--------------------/"
 
-//static int term_x, term_y;
+#define X_OFFSET 8
+#define Y_OFFSET 0
 
 void curses_init() {
   setlocale(LC_CTYPE, "");
@@ -30,18 +50,11 @@ void curses_init() {
 }
 
 void draw_board(struct cetris_game* g) {
-  for (int y = 0; y < BOARD_Y + 2; y++) {
-    if (y == 0) 
-      mvaddstr(y, 10, BOARD_TOP);
-    else if (y == BOARD_Y + 1) 
-      mvaddstr(y, 10, BOARD_BOTTOM);
-    else 
-      mvaddstr(y, 10, BOARD_MID);
-  }
+  mvaddstr(0, 0, PLAY_FIELD_STR);
   for (int x = 0; x < BOARD_X; x++) {
     for (int y = 0; y < BOARD_Y; y++) {
       if (g->board[x][y].occupied) 
-        mvaddstr(y + 1, x * 2 + 11, BLOCK);
+        mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
     }
   }
 }
