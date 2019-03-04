@@ -203,7 +203,7 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
       wall_kick = (next == RRIGHT) ? 3 : 4;
       break;
     default:  // check for UB causing invalid rotations
-      assert(false);
+      assert(0);
   }
 
   int set_current = 0;
@@ -322,13 +322,34 @@ void clear_move_queue(struct cetris_game* g) {
 void init_piece_queue(struct cetris_game* g) {
   for (int i = 0; i < 7; i++) {
     switch (i) {
-      case 0: g->piece_queue[i].t = O; break;
-      case 1: g->piece_queue[i].t = I; break;
-      case 2: g->piece_queue[i].t = S; break;
-      case 3: g->piece_queue[i].t = Z; break;
-      case 4: g->piece_queue[i].t = L; break;
-      case 5: g->piece_queue[i].t = J; break;
-      case 6: g->piece_queue[i].t = T; break;
+      case 0: 
+	g->piece_queue[i].t = O;
+	g->piece_queue[i].c = COLOR_O;
+	break;
+      case 1: 
+	g->piece_queue[i].t = I; 
+	g->piece_queue[i].c = COLOR_I;
+	break;
+      case 2: 
+	g->piece_queue[i].t = S; 
+	g->piece_queue[i].c = COLOR_S;
+	break;
+      case 3: 
+	g->piece_queue[i].t = Z; 
+	g->piece_queue[i].c = COLOR_Z;
+	break;
+      case 4: 
+	g->piece_queue[i].t = L; 
+	g->piece_queue[i].c = COLOR_L;
+	break;
+      case 5: 
+	g->piece_queue[i].t = J; 
+	g->piece_queue[i].c = COLOR_J;
+	break;
+      case 6: 
+	g->piece_queue[i].t = T; 
+	g->piece_queue[i].c = COLOR_T;
+	break;
     }
     memcpy(g->piece_queue[i].mat, default_matrices[i], sizeof(piece_matrix));
     g->piece_queue[i].r = INIT;
@@ -442,6 +463,7 @@ void wipe_board(struct cetris_game* g) {
       r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
       if (g->current.mat[y][x]) {
         g->board[r.x][r.y].occupied = 1;
+        g->board[r.x][r.y].c = g->current.c;
       }
     }
   }

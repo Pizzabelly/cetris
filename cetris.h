@@ -16,6 +16,17 @@ typedef enum {
 } type;
 
 typedef enum {
+  COLOR_NONE,
+  COLOR_O,
+  COLOR_I,
+  COLOR_S,
+  COLOR_Z,
+  COLOR_L,
+  COLOR_J,
+  COLOR_T
+} color;
+
+typedef enum {
   INIT,
   RRIGHT,
   RLEFT,
@@ -27,6 +38,7 @@ typedef int piece_matrix[4][4];
 struct tetrimino {
   type t;
   rstate r;
+  color c;
   piece_matrix mat;
   vec2 pos;
 };
@@ -35,6 +47,7 @@ typedef struct {
   int occupied;
   int constant;
   int remove_tick;
+  color c;
 } slot;
 
 enum movements {

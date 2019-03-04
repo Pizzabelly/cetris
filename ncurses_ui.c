@@ -40,10 +40,14 @@ void curses_init() {
   timeout(1000 / CETRIS_HZ);
 
   start_color();
-  init_pair(0, COLOR_MAGENTA, COLOR_BLACK);
-  init_pair(1, COLOR_GREEN, COLOR_BLACK);
-  init_pair(2, COLOR_BLUE, COLOR_BLACK);
-  init_pair(3, COLOR_YELLOW, COLOR_BLACK);
+  init_pair(COLOR_NONE, COLOR_BLACK, COLOR_BLACK);
+  init_pair(COLOR_O, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(COLOR_Z, COLOR_RED, COLOR_BLACK);
+  init_pair(COLOR_S, COLOR_CYAN, COLOR_BLACK);
+  init_pair(COLOR_T, COLOR_WHITE, COLOR_BLACK);
+  init_pair(COLOR_L, COLOR_GREEN, COLOR_BLACK);
+  init_pair(COLOR_I, COLOR_BLUE, COLOR_BLACK);
+  init_pair(COLOR_J, COLOR_YELLOW, COLOR_BLACK);
   clear();
 }
 
@@ -52,6 +56,7 @@ void draw_board(struct cetris_game* g) {
   for (int x = 0; x < BOARD_X; x++) {
     for (int y = 0; y < BOARD_Y; y++) {
       if (g->board[x][y].occupied) {
+	attron(COLOR_PAIR(g->board[x][y].c));
         if (g->board[x][y].remove_tick > 0) {
           if (g->tick % 2 == 0) {
             mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
@@ -59,6 +64,7 @@ void draw_board(struct cetris_game* g) {
         } else {
           mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
         }
+	attroff(COLOR_PAIR(g->board[x][y].c));
       }
     }
   }
