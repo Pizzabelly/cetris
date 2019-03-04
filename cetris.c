@@ -202,14 +202,17 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
     case TWO:
       wall_kick = (next == RRIGHT) ? 3 : 4;
       break;
+    default:  // check for UB causing invalid rotations
+      assert(false);
   }
 
   int set_current = 0;
+  vec2 kick;
   for (int i = 0; i < 5; i++) {
-    vec2 kick = (vec2){0, 0};
-    if (i > 0) {
-      if (g->current.t == I) kick = srs_wall_kicks_i[wall_kick][i - 1];
-      else kick = srs_wall_kicks[wall_kick][i - 1];
+    if (g->current.t == I) {
+      kick = srs_wall_kicks_i[wall_kick][i];
+    } else {
+      kick = srs_wall_kicks[wall_kick][i];
     }
     g->current.pos.x += kick.x;
     g->current.pos.y += kick.y;
@@ -328,6 +331,7 @@ void init_piece_queue(struct cetris_game* g) {
       case 6: g->piece_queue[i].t = T; break;
     }
     memcpy(g->piece_queue[i].mat, default_matrices[i], sizeof(piece_matrix));
+    g->piece_queue[i].r = INIT;
     g->piece_queue[i].pos = (vec2){5, 0};
   }
 }
