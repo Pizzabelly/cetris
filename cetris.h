@@ -1,3 +1,5 @@
+#pragma once
+
 #define BOARD_X 10
 #define BOARD_Y 20
 
@@ -57,21 +59,32 @@ enum movements {
 };
 
 struct cetris_game {
+  /* playfield represented by a 2d array */
   slot board[BOARD_X][BOARD_Y];
 
+  /* constant queue of all 7 possible tetrimino */
   struct tetrimino piece_queue[7];
 
+  /* current tetrimino */
   struct tetrimino current;
   int current_index;
 
+  /* 20 action movment queue so das 
+   * can be input independedent */
   enum movements move_queue[20];
   int move_queue_count;
   int move_queue_pos;
 
+  /* internal game tick */
   int tick;
 
+  /* progress trackers */
   int lines;
   int level;
+
+  /* scoring flags */
+  int tspin;
+  int mini_tspin;
 
   /* long int just incase */
   long int score;
