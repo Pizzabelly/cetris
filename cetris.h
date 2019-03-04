@@ -64,6 +64,8 @@ struct cetris_game {
   long int score;
 };
 
+/* API PROTOTYPES FUNCTIONS */
+
 void init_game(struct cetris_game* g);
 void update_game_tick(struct cetris_game* g);
 void move_down(struct cetris_game* g);

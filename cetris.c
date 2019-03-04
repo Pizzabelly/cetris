@@ -9,14 +9,6 @@
 
 /* FUNCTION PROTOTYPES */
 
-void init_game(struct cetris_game* g);
-void update_game_tick(struct cetris_game* g);
-void move_down(struct cetris_game* g);
-void move_left(struct cetris_game* g);
-void move_right(struct cetris_game* g);
-void move_hard_drop(struct cetris_game* g);
-void rotate_clockwise(struct cetris_game* g);
-void rotate_counterclockwise(struct cetris_game* g);
 static void init_piece_queue(struct cetris_game* g);
 static void shuffle_queue(struct cetris_game* g);
 static void next_piece(struct cetris_game* g);
@@ -26,7 +18,6 @@ static void wipe_board(struct cetris_game* g);
 static void set_constants(struct cetris_game* g);
 static void rotate_matrix(struct cetris_game* g, int clockwise);
 static void clear_move_queue(struct cetris_game* g);
-//static void add_score(struct cetris_game* g);
 
 /* DEFAULT MATRIX FOR EACH POSSIBLE TETRIMINO */
 
@@ -223,7 +214,8 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
     g->current.pos.x += kick.x;
     g->current.pos.y += kick.y;
     if (check_new_matrix(g, m) > 0) {
-      set_current = 1; break;
+      set_current = 1;
+      break;
     } else {
       g->current.pos.x -= kick.x;
       g->current.pos.y -= kick.y;
@@ -268,6 +260,41 @@ void init_game(struct cetris_game* g) {
   srand(time(NULL));
 
   memset(g->board, 0, sizeof(slot) * BOARD_X * BOARD_Y);
+
+#if 1
+  int tspinboard[20][10] = {
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 1, 1, 1, 1, 0, 0, 1, 1, 1, 1 },
+    { 1, 1, 1, 0, 0, 0, 1, 1, 1, 1 },
+    { 1, 1, 1, 1, 0, 1, 1, 1, 1, 1 },
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 }
+  };
+
+  for (int y = 0; y < 20; y++) {
+    for (int x = 0; x < 10; x++) {
+      if (tspinboard[y][x]) {
+        g->board[x][y].occupied = 1;
+        g->board[x][y].constant = 1;
+      }
+    }
+  }
+
+#endif
 
   g->tick = 0;
   g->current_index = 0;
@@ -398,7 +425,7 @@ void wipe_board(struct cetris_game* g) {
 
     if (clear_line) {
       lines_cleared++;
-
+      
       for (int x = 0; x < BOARD_X; x++) {
         g->board[x][y].remove_tick = g->tick + CETRIS_LINE_CLEAR_DELAY;
       }
@@ -419,14 +446,3 @@ void wipe_board(struct cetris_game* g) {
   g->lines += lines_cleared;
   if (g->lines >= (g->level * 10) && g->level <= 20) g->level++;
 }
-
-/*
-void add_score(struct cetris_game* g, int lines) {
-  switch (lines) {
-    case 1: score += 40 * (g->level + 1); break;
-    case 2: score += 100 * (g->level + 1); break;
-    case 3: score += 300 * (g->level + 1); break;
-    case 4: score += 1200 * (g->level + 1); break;
-  }
-}
-*/
