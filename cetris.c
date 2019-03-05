@@ -77,6 +77,11 @@ static const piece_matrix default_matrices[7] = {
   }
 };
 
+/* LEVEL DROP SPEED VALUES */
+static const int level_drop_delay[20] = {
+  48, 43, 38, 33, 28, 23, 18, 13, 8, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3 
+};
+
 /* SRS WALL KICK VALUES */
 
 // https://tetris.wiki/SRS
@@ -303,6 +308,8 @@ void init_game(struct cetris_game* g) {
 #endif
 
   g->tick = 0;
+  g->next_drop_tick = level_drop_delay[0];
+
   g->current_index = 0;
 
   clear_move_queue(g);
@@ -376,7 +383,10 @@ void shuffle_queue(struct cetris_game* g) {
 }
 
 void update_game_tick(struct cetris_game* g) {
-  if ((g->tick % CETRIS_HZ) == 0) move_down(g);
+  if (g->tick == g->next_drop_tick) {
+    move_down(g);
+    g->next_drop_tick = g->tick + level_drop_delay[g->level - 1];
+  }
 
   if (g->current.lock_tick && g->current.lock_tick <= g->tick) {
     g->current.pos.y++;

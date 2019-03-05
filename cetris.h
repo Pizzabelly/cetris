@@ -79,6 +79,7 @@ struct cetris_game {
 
   /* internal game tick */
   int tick;
+  int next_drop_tick;
 
   /* progress trackers */
   int lines;
