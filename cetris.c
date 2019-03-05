@@ -300,7 +300,7 @@ void init_game(struct cetris_game* g) {
   memset(g->board, 0, sizeof(slot) * BOARD_X * BOARD_Y);
 
 #ifdef BUILD_TESTS
-  apply_test_board(g, TSPIN);
+  apply_test_board(g, TSPIN_NO_LINES);
 #endif
 
   g->tick = 0;
@@ -427,13 +427,13 @@ void next_piece(struct cetris_game* g) {
 
   set_constants(g);
 
+  g->current = g->piece_queue[g->current_index];
+  g->current_index++;
+
   if (g->current_index >= 7) {
     g->current_index = 0;
     shuffle_queue(g);
   }
-
-  g->current = g->piece_queue[g->current_index];
-  g->current_index++;
 }
 
 void set_constants(struct cetris_game* g) {
@@ -486,9 +486,11 @@ void overlay_current_matrix(struct cetris_game* g) {
 void wipe_board(struct cetris_game* g, int did_move) {
   for (int y = 0; y < BOARD_Y; y++) {
     for (int x = 0; x < BOARD_X; x++) {
+
       if (!g->board[x][y].constant) { 
         memset(&g->board[x][y], 0, sizeof(slot));
       }
+
       if (g->board[x][y].remove_tick && g->board[x][y].remove_tick <= g->tick) {
         memset(&g->board[x][y], 0, sizeof(slot));
         for (int s = y - 1; s >= 0; s--) {
@@ -499,20 +501,18 @@ void wipe_board(struct cetris_game* g, int did_move) {
   }
 
   int lines_cleared = 0;
-  if (did_move) {
-    for (int y = 0; y < BOARD_Y; y++) {
-      int clear_line = 1;
+  for (int y = 0; y < BOARD_Y; y++) {
+    int clear_line = 1;
+    for (int x = 0; x < BOARD_X; x++) {
+      if (!g->board[x][y].occupied || 
+        g->board[x][y].remove_tick > 0 ||
+        !g->board[x][y].constant) 
+        clear_line = 0;
+    }
+    if (clear_line) {
+      lines_cleared++;
       for (int x = 0; x < BOARD_X; x++) {
-        if (!g->board[x][y].occupied || 
-          g->board[x][y].remove_tick > 0 ||
-          !g->board[x][y].constant) 
-          clear_line = 0;
-      }
-      if (clear_line) {
-        lines_cleared++;
-        for (int x = 0; x < BOARD_X; x++) {
-          g->board[x][y].remove_tick = g->tick + CETRIS_LINE_CLEAR_DELAY;
-        }
+        g->board[x][y].remove_tick = g->tick + CETRIS_LINE_CLEAR_DELAY;
       }
     }
   }
@@ -520,7 +520,7 @@ void wipe_board(struct cetris_game* g, int did_move) {
   overlay_current_matrix(g);
 
   assert(lines_cleared <= 4);
-  if (did_move) {
+  if (did_move || lines_cleared > 0) {
     add_score(g, lines_cleared);
     if (lines_cleared > 0) {
       g->lines += lines_cleared;

@@ -1,7 +1,8 @@
 #include "cetris.h"
 
 enum tests {
-  TSPIN
+  TSPIN,
+  TSPIN_NO_LINES
 };
 
 void apply_test_board(struct cetris_game* g, enum tests t);

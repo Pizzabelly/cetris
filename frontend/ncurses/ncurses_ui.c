@@ -12,12 +12,12 @@
                         "       |                    |                      \n"\
                         "       |                    |                      \n"\
                         "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
+                        "       |                    |       /---------\\   \n"\
+                        "       |                    |       |         |    \n"\
+                        "       |                    |       |         |    \n"\
+                        "       |                    |       |         |    \n"\
+                        "       |                    |       |         |    \n"\
+                        "       |                    |       \\---------/   \n"\
                         "       |                    |                      \n"\
                         "       |                    |                      \n"\
                         "       |                    |                      \n"\
@@ -68,9 +68,25 @@ void draw_board(struct cetris_game* g) {
 	      attroff(COLOR_PAIR(g->board[x][y].c));
       }
     }
+
     char score[50];
     sprintf(score, "%li", g->score);
     mvaddstr(1, (41 + X_OFFSET) - strlen(score), score);
+
+    int index = g->current_index;
+	  attron(COLOR_PAIR(g->piece_queue[index].c));
+    for (int x = 0; x < 4; x++) {
+      for (int y = 0; y < 4; y++) {
+        if (g->piece_queue[index].mat[y][x]) {
+          mvaddstr(7 + y, (x * 2) + 38, BLOCK);
+        }
+      }
+    }
+	  attroff(COLOR_PAIR(g->piece_queue[index].c));
+
+    char level[20];
+    sprintf(level, "Level: %i", g->level);
+    mvaddstr(4, 36, level); 
   }
 }
 
