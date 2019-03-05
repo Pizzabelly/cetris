@@ -117,8 +117,8 @@ void move_current(struct cetris_game* g, vec2 offset) {
     g->current.pos.y -= offset.y;
     g->current.pos.x -= offset.x;
 
-    if (check == -1) {
-      next_piece(g);
+    if (check == -1 && g->current.lock_tick == 0) {
+      g->current.lock_tick = g->tick + 30;
     }
     
     clear_move_queue(g);
@@ -361,7 +361,8 @@ void init_piece_queue(struct cetris_game* g) {
     }
     memcpy(g->piece_queue[i].mat, default_matrices[i], sizeof(piece_matrix));
     g->piece_queue[i].r = INIT;
-    g->piece_queue[i].pos = (vec2){5, 0};
+    g->piece_queue[i].lock_tick = 0;
+    g->piece_queue[i].pos = (vec2){3, 20}; // y = 22 - 1 for matrix
   }
 }
 
@@ -376,6 +377,15 @@ void shuffle_queue(struct cetris_game* g) {
 
 void update_game_tick(struct cetris_game* g) {
   if ((g->tick % CETRIS_HZ) == 0) move_down(g);
+
+  if (g->current.lock_tick && g->current.lock_tick <= g->tick) {
+    g->current.pos.y++;
+    if (check_new_matrix(g, g->current.mat) <= 0) {
+      next_piece(g);
+    }
+    g->current.pos.y--;
+    g->current.lock_tick = 0;
+  }
 
   enum movements current_move = g->move_queue[g->move_queue_pos];
 
@@ -412,6 +422,7 @@ void update_game_tick(struct cetris_game* g) {
           did_move = 0;
           break;
       }
+      //g->current.lock_tick = 0;
       if (g->move_queue_count != 0) g->move_queue_pos++;
       if (g->move_queue_pos >= 20) clear_move_queue(g);
     }

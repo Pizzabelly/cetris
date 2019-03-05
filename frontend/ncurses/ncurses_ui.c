@@ -81,15 +81,15 @@ void curses_init() {
 void draw_board(struct cetris_game* g) {
   mvaddstr(0, 0, PLAY_FIELD_STR);
   for (int x = 0; x < BOARD_X; x++) {
-    for (int y = 0; y < BOARD_Y; y++) {
+    for (int y = BOARD_VISABLE; y < BOARD_Y; y++) {
       if (g->board[x][y].occupied) {
 	      attron(COLOR_PAIR(g->board[x][y].c));
         if (g->board[x][y].remove_tick > 0) {
           if (g->tick % 2 == 0) {
-            mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
+            mvaddstr((y - BOARD_VISABLE) + 1, x * 2 + X_OFFSET, BLOCK);
           }
         } else {
-          mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
+          mvaddstr((y - BOARD_VISABLE) + 1, x * 2 + X_OFFSET, BLOCK);
         }
 	      attroff(COLOR_PAIR(g->board[x][y].c));
       }

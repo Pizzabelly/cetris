@@ -1,7 +1,8 @@
 #pragma once
 
 #define BOARD_X 10
-#define BOARD_Y 20
+#define BOARD_Y 43 
+#define BOARD_VISABLE 23 
 
 #define CETRIS_HZ 60
 #define CETRIS_DAS_DELAY 11
@@ -43,6 +44,7 @@ struct tetrimino {
   color c;
   piece_matrix mat;
   vec2 pos;
+  int lock_tick;
 };
 
 typedef struct {
