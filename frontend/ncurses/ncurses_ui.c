@@ -5,6 +5,7 @@
 
 #include "cetris.h"
 
+#ifdef ASCII_COMPATIBLE
 #define BLOCK "[]"
 #define PLAY_FIELD_STR  "       /--------------------\\    /----------------\\\n"\
                         "       |                    |    |                |\n"\
@@ -28,6 +29,31 @@
                         "       |                    |                      \n"\
                         "       |                    |                      \n"\
                         "       \\--------------------/"
+#else
+#define BLOCK "[]"
+#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━━━━━━━━━━┓  ┏━━━━━━━━━━━━━━━━┓  \n"\
+                        "       ┃                    ┃  ┃                ┃  \n"\
+                        "       ┃                    ┃  ┗━━━━━━━━━━━━━━━━┛  \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃    ┏━━━━━━━━━━━━┓    \n"\
+                        "       ┃                    ┃    ┃            ┃    \n"\
+                        "       ┃                    ┃    ┃            ┃    \n"\
+                        "       ┃                    ┃    ┃            ┃    \n"\
+                        "       ┃                    ┃    ┃            ┃    \n"\
+                        "       ┃                    ┃    ┗━━━━━━━━━━━━┛    \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┃                    ┃                      \n"\
+                        "       ┗━━━━━━━━━━━━━━━━━━━━┛                        "
+#endif
 
 #define X_OFFSET 8
 #define Y_OFFSET 0
@@ -85,7 +111,8 @@ void draw_board(struct cetris_game* g) {
 	  attroff(COLOR_PAIR(g->piece_queue[index].c));
 
     char level[20];
-    sprintf(level, "Level: %i", g->level);
+    sprintf(level, "%i", g->level);
+    mvaddstr(3, 36, "Level"); 
     mvaddstr(4, 36, level); 
   }
 }

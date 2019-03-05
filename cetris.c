@@ -250,7 +250,6 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
         g->current.pos.y += cardinal_movements[i].y;
         if (check_new_matrix(g, m) == 1) {
           did_tspin = 0;
-          break;
         }
         g->current.pos.x -= cardinal_movements[i].x;
         g->current.pos.y -= cardinal_movements[i].y;
