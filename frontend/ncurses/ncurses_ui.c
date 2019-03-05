@@ -31,17 +31,17 @@
                         "       \\--------------------/"
 #else
 #define BLOCK "[]"
-#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━━━━━━━━━━┓  ┏━━━━━━━━━━━━━━━━┓  \n"\
-                        "       ┃                    ┃  ┃                ┃  \n"\
-                        "       ┃                    ┃  ┗━━━━━━━━━━━━━━━━┛  \n"\
+#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━━━━━━━━━━┓  ┏━━━━━━━━━━━━━━━┓  \n"\
+                        "       ┃                    ┃  ┃               ┃  \n"\
+                        "       ┃                    ┃  ┗━━━━━━━━━━━━━━━┛  \n"\
                         "       ┃                    ┃                      \n"\
                         "       ┃                    ┃                      \n"\
-                        "       ┃                    ┃    ┏━━━━━━━━━━━━┓    \n"\
-                        "       ┃                    ┃    ┃            ┃    \n"\
-                        "       ┃                    ┃    ┃            ┃    \n"\
-                        "       ┃                    ┃    ┃            ┃    \n"\
-                        "       ┃                    ┃    ┃            ┃    \n"\
-                        "       ┃                    ┃    ┗━━━━━━━━━━━━┛    \n"\
+                        "       ┃                    ┃   ┏━━━━━━━━━━━━━┓    \n"\
+                        "       ┃                    ┃   ┃             ┃    \n"\
+                        "       ┃                    ┃   ┃             ┃    \n"\
+                        "       ┃                    ┃   ┃             ┃    \n"\
+                        "       ┃                    ┃   ┃             ┃    \n"\
+                        "       ┃                    ┃   ┗━━━━━━━━━━━━━┛    \n"\
                         "       ┃                    ┃                      \n"\
                         "       ┃                    ┃                      \n"\
                         "       ┃                    ┃                      \n"\
@@ -95,25 +95,33 @@ void draw_board(struct cetris_game* g) {
       }
     }
 
-    char score[50];
-    sprintf(score, "%li", g->score);
-    mvaddstr(1, (41 + X_OFFSET) - strlen(score), score);
-
     int index = g->current_index;
 	  attron(COLOR_PAIR(g->piece_queue[index].c));
     for (int x = 0; x < 4; x++) {
       for (int y = 0; y < 4; y++) {
         if (g->piece_queue[index].mat[y][x]) {
-          mvaddstr(7 + y, (x * 2) + 38, BLOCK);
+          if (g->piece_queue[index].t == I) {
+            mvaddstr(6 + y, (x * 2) + 36, BLOCK);
+          } else {
+            mvaddstr(6 + y, (x * 2) + 37, BLOCK);
+          }
         }
       }
     }
 	  attroff(COLOR_PAIR(g->piece_queue[index].c));
 
+    attron(A_BOLD);
+
+    char score[50];
+    sprintf(score, "%li", g->score);
+    mvaddstr(1, (39 + X_OFFSET) - strlen(score), score);
+
     char level[20];
     sprintf(level, "%i", g->level);
-    mvaddstr(3, 36, "Level"); 
-    mvaddstr(4, 36, level); 
+    mvaddstr(3, 37, "Level"); 
+    mvaddstr(4, 40 - strlen(level), level); 
+
+    attroff(A_BOLD);
   }
 }
 
