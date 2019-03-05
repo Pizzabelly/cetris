@@ -1,31 +1,32 @@
 #include <stdlib.h>
+#include <string.h>
 #include <ncurses.h>
 #include <locale.h>
 
 #include "cetris.h"
 
 #define BLOCK "[]"
-#define PLAY_FIELD_STR  "       /--------------------\\    /--------\\\n"\
-                        "       |                    |    |        |\n"\
-                        "       |                    |    \\--------/\n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
-                        "       |                    |              \n"\
+#define PLAY_FIELD_STR  "       /--------------------\\    /----------------\\\n"\
+                        "       |                    |    |                |\n"\
+                        "       |                    |    \\----------------/\n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
+                        "       |                    |                      \n"\
                         "       \\--------------------/"
 
 #define X_OFFSET 8
@@ -56,7 +57,7 @@ void draw_board(struct cetris_game* g) {
   for (int x = 0; x < BOARD_X; x++) {
     for (int y = 0; y < BOARD_Y; y++) {
       if (g->board[x][y].occupied) {
-	attron(COLOR_PAIR(g->board[x][y].c));
+	      attron(COLOR_PAIR(g->board[x][y].c));
         if (g->board[x][y].remove_tick > 0) {
           if (g->tick % 2 == 0) {
             mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
@@ -64,9 +65,12 @@ void draw_board(struct cetris_game* g) {
         } else {
           mvaddstr(y + 1, x * 2 + X_OFFSET, BLOCK);
         }
-	attroff(COLOR_PAIR(g->board[x][y].c));
+	      attroff(COLOR_PAIR(g->board[x][y].c));
       }
     }
+    char score[50];
+    sprintf(score, "%li", g->score);
+    mvaddstr(1, (41 + X_OFFSET) - strlen(score), score);
   }
 }
 
