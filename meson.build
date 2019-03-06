@@ -6,20 +6,22 @@ compiler = meson.get_compiler('c')
 
 src = ['cetris.c']
 
+if get_option('debug') == true 
+  src += ['test.c']
+  add_global_arguments('-DBUILD_TESTS', language : 'c') 
+endif
+
 if get_option('build_frontends') == true
   if host_machine.system() == 'windows'
    curses = compiler.find_library('pdcurses/pdcurses.a', dirs: meson.source_root())
   else
    curses = dependency('ncursesw')
   endif
-  src += ['frontend/ncurses/ncurses_ui.c']
+  sdl = dependency('sdl2')
+  executable('cetris_curses', [src, 'frontend/ncurses/ncurses_ui.c'], 
+	       dependencies: curses,
+           install : false)
+  executable('cetris_sdl', [src, 'frontend/sdl/sdl_ui.c'], 
+	       dependencies: sdl,
+           install : false)
 endif
-
-if get_option('debug') == true 
-  src += ['test.c']
-  add_global_arguments('-DBUILD_TESTS', language : 'c') 
-endif
-
-executable('cetris', src, 
-	         dependencies: curses,
-           install : true)
