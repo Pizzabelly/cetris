@@ -21,7 +21,7 @@ static int check_new_matrix(struct cetris_game* g, piece_matrix m);
 static void wipe_board(struct cetris_game* g, int did_move);
 static void set_constants(struct cetris_game* g);
 static void rotate_matrix(struct cetris_game* g, int clockwise);
-static void clear_move_queue(struct cetris_game* g);
+//static void clear_move_queue(struct cetris_game* g);
 static void overlay_current_matrix(struct cetris_game* g);
 
 /* DEFAULT MATRIX FOR EACH POSSIBLE TETRIMINO */
@@ -126,7 +126,7 @@ void move_current(struct cetris_game* g, vec2 offset) {
       g->current.lock_tick = g->tick + 30;
     }
     
-    clear_move_queue(g);
+    //clear_move_queue(g);
   }
 }
 
@@ -151,24 +151,15 @@ void move_hard_drop(struct cetris_game* g) {
 }
 
 void move_down(struct cetris_game* g) {
-  if (g->move_queue_pos >= g->move_queue_count - 1) {
-    g->move_queue[g->move_queue_count] = DOWN;
-    g->move_queue_count++;
-  }
+  g->queued_move = DOWN;
 }
 
 void move_right(struct cetris_game* g) {
-  if (g->move_queue_pos >= g->move_queue_count - 1) {
-    g->move_queue[g->move_queue_count] = RIGHT;
-    g->move_queue_count++;
-  }
+  g->queued_move = RIGHT;
 }
 
 void move_left(struct cetris_game* g) {
-  if (g->move_queue_pos >= g->move_queue_count - 1) {
-    g->move_queue[g->move_queue_count] = LEFT;
-    g->move_queue_count++;
-  }
+  g->queued_move = LEFT;
 }
 
 void rotate_matrix(struct cetris_game* g, int clockwise) {
@@ -312,7 +303,10 @@ void init_game(struct cetris_game* g) {
 
   g->current_index = 0;
 
-  clear_move_queue(g);
+  g->queued_move = 0;
+  g->prev_move = 0;
+  g->move_repeat = 0;
+  //clear_move_queue(g);
 
   g->lines = 0;
   g->level = 1;
@@ -328,11 +322,13 @@ void init_game(struct cetris_game* g) {
   next_piece(g);
 }
 
+/*
 void clear_move_queue(struct cetris_game* g) {
   memset(g->move_queue, 0, sizeof(enum movements) * 20);
   g->move_queue_count = 0;
   g->move_queue_pos = 0;
 }
+*/
 
 void init_piece_queue(struct cetris_game* g) {
   for (int i = 0; i < 7; i++) {
@@ -397,27 +393,28 @@ void update_game_tick(struct cetris_game* g) {
     g->current.lock_tick = 0;
   }
 
-  enum movements current_move = g->move_queue[g->move_queue_pos];
+  //enum movements current_move = g->move_queue[g->move_queue_pos];
 
   /* input independedent das movement */
   int delay = 0;
-  if (g->move_queue_pos > 0) {
-    if (current_move == g->move_queue[g->move_queue_pos - 1]) {
-      if (g->move_queue_pos == 1) {
-        delay = CETRIS_DAS_DELAY;
-      } else {
-        delay = CETRIS_DAS_PERIOD;
-      }
+  if (g->move_repeat > 0) {
+    if (g->queued_move == g->prev_move) {
+      g->move_repeat++;
     } else {
-      clear_move_queue(g);
+      g->move_repeat = 0;
+    }
+    if (g->move_repeat == 1) {
+      delay = CETRIS_DAS_DELAY;
+    } else if (g->move_repeat > 1) {
+      delay = CETRIS_DAS_PERIOD;
     }
   }
- 
+
   int did_move = 0;
   if (!delay || g->tick % delay == 0) {
-    if (current_move > 0) {
+    if (g->queued_move > 0) {
       did_move = 1;
-      switch (current_move) {
+      switch (g->queued_move) {
         case DOWN:
           move_current(g, cardinal_movements[0]);
           g->score++; // 1 score for each softdrop
@@ -432,9 +429,11 @@ void update_game_tick(struct cetris_game* g) {
           did_move = 0;
           break;
       }
+      if (did_move) {
+        g->prev_move = g->queued_move;
+        g->queued_move = 0;
+      }
       //g->current.lock_tick = 0;
-      if (g->move_queue_count != 0) g->move_queue_pos++;
-      if (g->move_queue_pos >= 20) clear_move_queue(g);
     }
     wipe_board(g, did_move); 
   }
@@ -443,7 +442,7 @@ void update_game_tick(struct cetris_game* g) {
 }
 
 void next_piece(struct cetris_game* g) {
-  clear_move_queue(g);
+  //clear_move_queue(g);
 
   set_constants(g);
 

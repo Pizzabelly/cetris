@@ -54,7 +54,7 @@ typedef struct {
   color c;
 } slot;
 
-enum movements {
+enum movement {
   DOWN = 1,
   LEFT = 2,
   RIGHT = 3
@@ -71,11 +71,9 @@ struct cetris_game {
   struct tetrimino current;
   int current_index;
 
-  /* 20 action movment queue so das 
-   * can be input independedent */
-  enum movements move_queue[20];
-  int move_queue_count;
-  int move_queue_pos;
+  enum movement queued_move;
+  enum movement prev_move;
+  int move_repeat;
 
   /* internal game tick */
   int tick;
