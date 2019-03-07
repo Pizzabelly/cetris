@@ -1,17 +1,20 @@
 #pragma once
 
+#include <stdint.h>
+
 #define BOARD_X 10
 #define BOARD_Y 43 
 #define BOARD_VISABLE 23 
 
 #define CETRIS_HZ 60
-#define CETRIS_DAS_DELAY 11
-#define CETRIS_DAS_PERIOD 5
+#define CETRIS_DAS_DELAY 6  
+#define CETRIS_DAS_PERIOD 3 
 #define CETRIS_LINE_CLEAR_DELAY 40
+#define CETRIS_WAIT_ON_CLEAR 0
 
 typedef struct {
-  int x;
-  int y;
+  int8_t x;
+  int8_t y;
 } vec2;
 
 typedef enum {
@@ -36,7 +39,7 @@ typedef enum {
   TWO
 } rstate;
 
-typedef int piece_matrix[4][4];
+typedef uint8_t piece_matrix[4][4];
 
 struct tetrimino {
   type t;
@@ -48,8 +51,8 @@ struct tetrimino {
 };
 
 typedef struct {
-  int occupied;
-  int constant;
+  uint8_t occupied;
+  uint8_t constant;
   int remove_tick;
   color c;
 } slot;
@@ -57,7 +60,8 @@ typedef struct {
 enum movement {
   DOWN = 1,
   LEFT = 2,
-  RIGHT = 3
+  RIGHT = 3,
+  USER_DOWN = 4 
 };
 
 struct cetris_game {
@@ -69,11 +73,11 @@ struct cetris_game {
 
   /* current tetrimino */
   struct tetrimino current;
-  int current_index;
+  uint8_t current_index;
 
   enum movement queued_move;
   enum movement prev_move;
-  int move_repeat;
+  uint16_t move_repeat;
 
   /* internal game tick */
   int tick;
@@ -81,11 +85,12 @@ struct cetris_game {
 
   /* progress trackers */
   int lines;
-  int level;
+  uint8_t level;
+  uint8_t game_over;
 
   /* scoring flags */
-  int tspin;
-  int mini_tspin;
+  uint8_t tspin;
+  uint8_t mini_tspin;
 
   /* long int just incase */
   long int score;

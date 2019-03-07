@@ -18,10 +18,11 @@ if get_option('build_frontends') == true
    curses = dependency('ncursesw')
   endif
   sdl = dependency('sdl2')
+  sdl2_ttf = meson.get_compiler('c').find_library('SDL2_ttf')
   executable('cetris_curses', [src, 'frontend/ncurses/ncurses_ui.c'], 
 	       dependencies: curses,
            install : false)
   executable('cetris_sdl', [src, 'frontend/sdl/sdl_ui.c'], 
-	       dependencies: sdl,
+	       dependencies: [sdl, sdl2_ttf],
            install : false)
 endif
