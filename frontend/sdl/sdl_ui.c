@@ -1,5 +1,14 @@
+#ifdef _WIN32
+#define SDL_DISABLE_IMMINTRIN_H
+#define SDL_MAIN_HANDLED
+#include <SDL.h>
+#include <SDL_ttf.h>
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#endif
+#include <stdio.h>
+#include <string.h>
 
 #include "cetris.h"
 
@@ -14,6 +23,7 @@ SDL_Renderer* render;
 SDL_Texture*  block;
 SDL_Event e;
 TTF_Font* font;
+TTF_Font* big_font;
 
 typedef struct {
   int r;
@@ -37,21 +47,27 @@ void setup() {
   SDL_Window* win = SDL_CreateWindow("Cetris", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, W, H, SDL_WINDOW_SHOWN);
   render = SDL_CreateRenderer(win, -1, SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_ACCELERATED);
   SDL_RenderSetLogicalSize(render, W, H);
-  if (!render) exit(fprintf(stderr, "[Error] Could not create SDL renderer\n")); 
+  if (!render) exit(printf("[Error] Could not create SDL renderer\n")); 
   SDL_Surface* s = SDL_LoadBMP("block.bmp");
   block = SDL_CreateTextureFromSurface(render, s);
   SDL_FreeSurface(s);
 
   TTF_Init();
   font = TTF_OpenFont("LiberationMono-Regular.ttf", 18);
+  big_font = TTF_OpenFont("LiberationMono-Regular.ttf", 30);
 }
 
-void draw_text(char* string, int x, int y) {
+void draw_text(char* string, int x, int y, int black) {
   int w, h;
   char msg[80];
   snprintf(msg, 80, string);
   TTF_SizeText(font, msg, &w, &h);
-  SDL_Surface *msgsurf = TTF_RenderText_Blended(font, msg, (SDL_Color){255, 255, 255, 255});
+  SDL_Surface* msgsurf;
+  if (black) {
+    msgsurf = TTF_RenderText_Blended(big_font, msg, (SDL_Color){20, 20, 30, 255});
+  } else {
+    msgsurf = TTF_RenderText_Blended(font, msg, (SDL_Color){255, 255, 255, 255});
+  }
   SDL_Texture *msgtex = SDL_CreateTextureFromSurface(render, msgsurf);
   SDL_Rect fromrec = {0, 0, msgsurf->w, msgsurf->h};
   SDL_Rect torec = {x, y, msgsurf->w, msgsurf->h};
@@ -100,28 +116,28 @@ void draw_stuff() {
   SDL_Rect s = {290, 20 + y_off, 135, 42};
   SDL_RenderFillRect(render, &s);
   SDL_RenderDrawRect(render, &s);
-  draw_text("SCORE", 295, 23 + y_off);
+  draw_text("SCORE", 295, 23 + y_off, 0);
   char* score = malloc(sizeof(char) * 25);
   sprintf(score, "%li", g.score);
-  draw_text(score, 294 + strlen(score), 40 + y_off);
+  draw_text(score, 294 + strlen(score), 40 + y_off, 0);
   free(score);
 
   SDL_Rect l = {290, 70 + y_off, 135, 42};
   SDL_RenderFillRect(render, &l);
   SDL_RenderDrawRect(render, &l);
-  draw_text("LEVEL", 295, 73 + y_off);
+  draw_text("LEVEL", 295, 73 + y_off, 0);
   char* level = malloc(sizeof(char) * 25);
   sprintf(level, "%i", g.level);
-  draw_text(level, 294 + strlen(level), 90 + y_off);
+  draw_text(level, 294 + strlen(level), 90 + y_off, 0);
   free(level);
 
   SDL_Rect l1 = {290, 120 + y_off, 135, 42};
   SDL_RenderFillRect(render, &l1);
   SDL_RenderDrawRect(render, &l1);
-  draw_text("LINES", 295, 123 + y_off);
+  draw_text("LINES", 295, 123 + y_off, 0);
   char* lines = malloc(sizeof(char) * 25);
   sprintf(lines, "%i", g.lines);
-  draw_text(lines, 294 + strlen(lines), 140 + y_off);
+  draw_text(lines, 294 + strlen(lines), 140 + y_off, 0);
   free(lines);
 
   SDL_SetRenderDrawColor(render, 255, 255, 255, 124);
@@ -148,6 +164,12 @@ void draw_stuff() {
       }
     }
   }
+  
+  if (g.game_over) {
+    draw_text("GAME OVER", 76, 220, 1);
+    draw_text("r to restart", 48, 255, 1);
+  }
+
   SDL_RenderPresent(render);
 }
 
@@ -171,7 +193,21 @@ int main(void) {
               move_hard_drop(&g); break;
             case SDLK_UP:
               rotate_clockwise(&g); break;
+            case SDLK_r:
+              if (g.game_over) init_game(&g);
           }
+	  break;
+        case SDL_KEYUP:
+	  switch (e.key.keysym.sym) {
+	    case SDLK_LEFT:
+	    case SDLK_RIGHT:
+	    case SDLK_DOWN:
+	    case SDLK_SPACE:
+	    case SDLK_UP:
+	      clear_held_key(&g.input);
+	      break;
+	  }
+	  break;
       }
     }
     update_game_tick(&g);

@@ -7,8 +7,9 @@
 #define BOARD_VISABLE 23 
 
 #define CETRIS_HZ 60
-#define CETRIS_DAS_DELAY 6  
-#define CETRIS_DAS_PERIOD 3 
+#define CETRIS_DAS_DELAY 11 
+#define CETRIS_DAS_PERIOD 5
+#define CETRIS_DROP_PERIOD 2
 #define CETRIS_LINE_CLEAR_DELAY 40
 #define CETRIS_WAIT_ON_CLEAR 0
 
@@ -57,11 +58,21 @@ typedef struct {
   color c;
 } slot;
 
-enum movement {
-  DOWN = 1,
-  LEFT = 2,
-  RIGHT = 3,
-  USER_DOWN = 4 
+typedef enum {
+  DOWN       = 1,
+  RIGHT      = 2,
+  LEFT       = 3,
+  ROTATE_CCW = 4,
+  ROTATE_CW  = 5,
+  HARD_DROP  = 6
+} move;
+
+struct input_manager {
+  move held_move;
+  move prev_move;
+  int next_move_tick;
+  uint8_t can_rotate;
+  uint8_t can_hard_drop;
 };
 
 struct cetris_game {
@@ -75,9 +86,7 @@ struct cetris_game {
   struct tetrimino current;
   uint8_t current_index;
 
-  enum movement queued_move;
-  enum movement prev_move;
-  uint16_t move_repeat;
+  struct input_manager input;
 
   /* internal game tick */
   int tick;
@@ -106,3 +115,4 @@ void move_right(struct cetris_game* g);
 void move_hard_drop(struct cetris_game* g);
 void rotate_clockwise(struct cetris_game* g);
 void rotate_counterclockwise(struct cetris_game* g);
+void clear_held_key(struct input_manager* input);

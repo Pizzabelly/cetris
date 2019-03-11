@@ -22,6 +22,7 @@ static void wipe_board(struct cetris_game* g);
 static void set_constants(struct cetris_game* g);
 static void rotate_matrix(struct cetris_game* g, int clockwise);
 static void overlay_current_matrix(struct cetris_game* g);
+static uint8_t handle_inputs(struct cetris_game* g);
 
 /* DEFAULT MATRIX FOR EACH POSSIBLE TETRIMINO */
 
@@ -108,8 +109,8 @@ static const vec2 srs_wall_kicks_i[8][5] = {
   
 /* MATRIX MODIFICATION */
 
-static const vec2 cardinal_movements[4] = {
-  {0, 1}, {0, -1}, {1, 0}, {-1, 0} // DOWN, UP, RIGHT, LEFT
+static const vec2 basic_movements[4] = {
+  {0, 0}, {0, 1}, {1, 0}, {-1, 0} // NONE, DOWN, RIGHT, LEFT
 };
 
 void move_current(struct cetris_game* g, vec2 offset) {
@@ -125,9 +126,11 @@ void move_current(struct cetris_game* g, vec2 offset) {
       g->current.lock_tick = g->tick + 30;
     }
   }
+
+  wipe_board(g);
 }
 
-void move_hard_drop(struct cetris_game* g) {
+void hard_drop(struct cetris_game* g) {
   if (g->game_over) return;
 
   uint8_t drop = 0;
@@ -149,16 +152,32 @@ void move_hard_drop(struct cetris_game* g) {
   next_piece(g);
 }
 
+void move_hard_drop(struct cetris_game* g) {
+  if (g->input.held_move != HARD_DROP) {
+    hard_drop(g);
+  }
+  g->input.held_move = HARD_DROP;
+}
+
 void move_down(struct cetris_game* g) {
-  g->queued_move = USER_DOWN;
+  if (g->input.held_move != DOWN) {
+    move_current(g, basic_movements[DOWN]);
+  }
+  g->input.held_move = DOWN;
 }
 
 void move_right(struct cetris_game* g) {
-  g->queued_move = RIGHT;
+  if (g->input.held_move != RIGHT) {
+    move_current(g, basic_movements[RIGHT]);
+  }
+  g->input.held_move = RIGHT;
 }
 
 void move_left(struct cetris_game* g) {
-  g->queued_move = LEFT;
+  if (g->input.held_move != LEFT) {
+    move_current(g, basic_movements[LEFT]);
+  }
+  g->input.held_move = LEFT;
 }
 
 void rotate_matrix(struct cetris_game* g, int clockwise) {
@@ -243,13 +262,13 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
     if (g->current.t == T) {
       uint8_t did_tspin = 1;
       for (uint8_t i = 0; i < 4; i++) {
-        g->current.pos.x += cardinal_movements[i].x;
-        g->current.pos.y += cardinal_movements[i].y;
+        g->current.pos.x += basic_movements[i].x;
+        g->current.pos.y += basic_movements[i].y;
         if (check_new_matrix(g, m) == 1) {
           did_tspin = 0;
         }
-        g->current.pos.x -= cardinal_movements[i].x;
-        g->current.pos.y -= cardinal_movements[i].y;
+        g->current.pos.x -= basic_movements[i].x;
+        g->current.pos.y -= basic_movements[i].y;
       }
       if (did_tspin) {
         if (did_kick) g->mini_tspin = 1;
@@ -264,11 +283,17 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
 }
 
 void rotate_clockwise(struct cetris_game* g) {
-  rotate_matrix(g, 1);
+  if (g->input.held_move != ROTATE_CW) {
+    rotate_matrix(g, 1);
+  }
+  g->input.held_move = ROTATE_CW;
 }
 
 void rotate_counterclockwise(struct cetris_game* g) {
-  rotate_matrix(g, 0);
+  if (g->input.held_move != ROTATE_CCW) {
+    rotate_matrix(g, 0);
+  }
+  g->input.held_move = ROTATE_CCW;
 }
 
 int8_t check_new_matrix(struct cetris_game* g, piece_matrix m) {
@@ -297,7 +322,7 @@ void init_game(struct cetris_game* g) {
   memset(g->board, 0, sizeof(slot) * BOARD_X * BOARD_Y);
 
 #ifdef BUILD_TESTS
-  //aply_test_board(g, TSPIN_NO_LINES);
+  apply_test_board(g, TSPIN_NO_LINES);
 #endif
 
   g->tick = 0;
@@ -305,9 +330,11 @@ void init_game(struct cetris_game* g) {
 
   g->current_index = 0;
 
-  g->queued_move = 0;
-  g->prev_move = 0;
-  g->move_repeat = 0;
+  g->input.held_move = 0;
+  g->input.prev_move = 0;
+  g->input.next_move_tick = 0;
+  g->input.can_rotate = 0;
+  g->input.can_hard_drop = 0;
 
   g->lines = 0;
   g->level = 1;
@@ -372,17 +399,60 @@ void shuffle_queue(struct cetris_game* g) {
   }
 }
 
+uint8_t handle_inputs(struct cetris_game* g) {
+  uint8_t did_move = 0;
+  if (g->input.held_move && !g->input.next_move_tick) {
+    if (g->input.held_move == RIGHT || g->input.held_move == LEFT) {
+      if (g->input.prev_move == g->input.held_move) {
+	g->input.next_move_tick = g->tick + CETRIS_DAS_PERIOD;
+      } else {
+	g->input.next_move_tick = g->tick + CETRIS_DAS_DELAY;
+      }
+    } else {
+      g->input.next_move_tick = g->tick + CETRIS_DROP_PERIOD;
+    }
+  }
+
+  if (g->input.next_move_tick && g->tick >= g->input.next_move_tick) {
+    switch (g->input.held_move) {
+      case DOWN:
+        g->score++;
+        move_current(g, basic_movements[DOWN]);
+        break;
+      case LEFT: 
+        move_current(g, basic_movements[LEFT]);
+        break;
+      case RIGHT:
+        move_current(g, basic_movements[RIGHT]);
+        break;
+    }
+    did_move = 1;
+  }
+
+  if (did_move) {
+    g->input.next_move_tick = 0;
+    g->input.prev_move = g->input.held_move;
+  }
+  return did_move;
+}
+
+void clear_held_key(struct input_manager* input) {
+  input->prev_move = 0;
+  input->held_move = 0;
+  input->next_move_tick = 0;
+}
+
 void update_game_tick(struct cetris_game* g) {
   if (g->game_over) return;
 
   uint8_t did_move = 0;
   if (g->tick == g->next_drop_tick) {
-    move_current(g, cardinal_movements[0]);
+    move_current(g, basic_movements[DOWN]);
     did_move = 1;
-    //g->queued_move = DOWN;
     g->next_drop_tick = g->tick + level_drop_delay[g->level - 1];
   }
 
+  /* lock piece if it was hovering for CETRIS_LOCK_DELAY */
   if (g->current.lock_tick && g->current.lock_tick <= g->tick) {
     g->current.pos.y++;
     if (check_new_matrix(g, g->current.mat) <= 0) {
@@ -392,44 +462,11 @@ void update_game_tick(struct cetris_game* g) {
     g->current.lock_tick = 0;
   }
 
-  /* input independedent das */
-  if (g->queued_move) {
-    uint8_t delay = 0;
-    if (g->queued_move != DOWN && 
-        g->queued_move == g->prev_move) {
-      g->move_repeat++;
-    } else {
-      g->move_repeat = 0;
-    }
-    if (g->move_repeat == 1) {
-      delay = CETRIS_DAS_DELAY;
-    } else if (g->move_repeat > 1) {
-      delay = CETRIS_DAS_PERIOD;
-    }
-
-    if (!delay || g->tick % delay == 0) {
-      did_move = 1;
-      switch (g->queued_move) {
-        case USER_DOWN:
-          g->score++;
-          move_current(g, cardinal_movements[0]);
-          break;
-        case LEFT: 
-          move_current(g, cardinal_movements[3]);
-          break;
-        case RIGHT:
-          move_current(g, cardinal_movements[2]);
-          break;
-        default: 
-          did_move = 0;
-          break;
-      }
-    }
+  if (handle_inputs(g)) {
+    did_move = 1;
   }
-
+  
   if (did_move) {
-    g->prev_move = g->queued_move;
-    g->queued_move = 0;
     wipe_board(g); 
   }
 

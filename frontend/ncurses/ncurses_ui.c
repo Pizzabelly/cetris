@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include "_win\pdcurses\curses.h"
+#else
 #include <ncurses.h>
+#endif
 #include <locale.h>
 
 #include "cetris.h"
@@ -160,7 +164,7 @@ int main(void) {
     }
     update_game_tick(&game);
     erase();
-    draw_board(&game);
+    draw_board();
     refresh();
   }
   return 0;
