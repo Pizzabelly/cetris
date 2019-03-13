@@ -141,11 +141,11 @@ void draw_stuff() {
   free(lines);
 
   SDL_SetRenderDrawColor(render, 255, 255, 255, 124);
-  for (int x = 0; x < BOARD_X + 1; x++) {
+  for (int x = 0; x < CETRIS_BOARD_X + 1; x++) {
     int rx = BOARD_OFFSET_X + 1 + (x * 25);
     SDL_RenderDrawLine(render, rx, BOARD_OFFSET_Y + 1, rx, BOARD_OFFSET_Y + 500);
   }
-  for (int y = 0; y < BOARD_Y - BOARD_VISABLE + 1; y++) {
+  for (int y = 0; y < CETRIS_BOARD_Y - CETRIS_BOARD_VISABLE + 1; y++) {
     int ry = BOARD_OFFSET_Y + (y * 25);
     SDL_RenderDrawLine(render, BOARD_OFFSET_X + 1, ry, BOARD_OFFSET_X + 250, ry);
   }
@@ -153,13 +153,13 @@ void draw_stuff() {
 
   sdl_color c;
   SDL_Rect r = {0, 0, 25, 25};
-  for (int x = 0; x < BOARD_X; x++) {
-    for (int y = BOARD_VISABLE; y < BOARD_Y; y++) {
+  for (int x = 0; x < CETRIS_BOARD_X; x++) {
+    for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
       if (g.board[x][y].occupied) {
         c = colors[g.board[x][y].c];
         SDL_SetTextureColorMod(block, c.r, c.g, c.b);
         r.x = BOARD_OFFSET_X + x * 25;
-        r.y = BOARD_OFFSET_Y + (y - BOARD_VISABLE) * 25;
+        r.y = BOARD_OFFSET_Y + (y - CETRIS_BOARD_VISABLE) * 25;
         SDL_RenderCopy(render, block, NULL, &r);
       }
     }

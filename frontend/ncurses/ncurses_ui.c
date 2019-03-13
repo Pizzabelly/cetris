@@ -35,17 +35,17 @@
                         "       \\--------------------/"
 #else
 #define BLOCK "[]"
-#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━━━━━━━━━━┓  ┏━━━━━━━━━━━━━━━┓  \n"\
+#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━┓  ┏━━━━━━━━━\n"\
                         "       ┃                    ┃  ┃               ┃  \n"\
-                        "       ┃                    ┃  ┗━━━━━━━━━━━━━━━┛  \n"\
+                        "       ┃                    ┃   ━━━━━━━━━┛  \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
-                        "       ┃                    ┃    ┏━━━━━━━━━━━┓    \n"\
+                        "       ┃                    ┃    ┏━━━━━━┓    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
-                        "       ┃                    ┃    ┗━━━━━━━━━━━┛    \n"\
+                        "       ┃                    ┃    ┗━━━━━━┛    \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
@@ -56,7 +56,7 @@
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
-                        "       ┗━━━━━━━━━━━━━━━━━━━━┛                        "
+                        "       ┗━━━━━━━━━━━┛                        "
 #endif
 
 #define X_OFFSET 8
@@ -86,16 +86,16 @@ void curses_init() {
 
 void draw_board() {
   mvaddstr(0, 0, PLAY_FIELD_STR);
-  for (int x = 0; x < BOARD_X; x++) {
-    for (int y = BOARD_VISABLE; y < BOARD_Y; y++) {
+  for (int x = 0; x < CETRIS_BOARD_X; x++) {
+    for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
       if (game.board[x][y].occupied) {
 	      attron(COLOR_PAIR(game.board[x][y].c));
         if (game.board[x][y].remove_tick > 0) {
           if (game.tick % 2 == 0) {
-            mvaddstr((y - BOARD_VISABLE) + 1, x * 2 + X_OFFSET, BLOCK);
+            mvaddstr((y - CETRIS_BOARD_VISABLE) + 1, x * 2 + X_OFFSET, BLOCK);
           }
         } else {
-          mvaddstr((y - BOARD_VISABLE) + 1, x * 2 + X_OFFSET, BLOCK);
+          mvaddstr((y - CETRIS_BOARD_VISABLE) + 1, x * 2 + X_OFFSET, BLOCK);
         }
 	      attroff(COLOR_PAIR(game.board[x][y].c));
       }
@@ -161,6 +161,8 @@ int main(void) {
           init_game(&game);
         }
         break;
+      default:
+        clear_held_key(&game.input);
     }
     update_game_tick(&game);
     erase();

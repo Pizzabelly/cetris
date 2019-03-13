@@ -4,7 +4,8 @@ project('cetris', 'c',
 
 compiler = meson.get_compiler('c')
 
-src = ['cetris.c']
+src = ['src/input.c', 'src/matrix.c', 'src/cetris.c']
+inc = include_directories('src')
 
 if host_machine.system() != 'windows'
   if get_option('debug') == true 
@@ -12,7 +13,7 @@ if host_machine.system() != 'windows'
   endif
 endif
 
-src += ['test.c']
+src += ['src/test.c']
 sdlinc = []
 sdlttfinc = []
 
@@ -28,11 +29,12 @@ if get_option('build_frontends') == true
    sdl2 = dependency('sdl2')
    sdl2_ttf = meson.get_compiler('c').find_library('SDL2_ttf')
   endif
-#  executable('cetris_curses', [src, 'frontend/ncurses/ncurses_ui.c'], 
-#	       dependencies: curses,
-#           install : false)
+  executable('cetris_curses', [src, 'frontend/ncurses/ncurses_ui.c'], 
+	       dependencies: curses,
+         include_directories: inc,
+         install : false)
   executable('cetris_sdl', [src, 'frontend/sdl/sdl_ui.c'], 
-         include_directories: [sdlttfinc, sdlinc],
+         include_directories: [inc, sdlttfinc, sdlinc],
 	       dependencies: [sdl2, sdl2_ttf],
-           install : false)
+         install : false)
 endif
