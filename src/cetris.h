@@ -2,8 +2,7 @@
 
 #include <stdint.h>
 
-#include "input.h"
-#include "matrix.h"
+#include "types.h"
 
 #define CETRIS_BOARD_X 10
 #define CETRIS_BOARD_Y 43 
@@ -15,12 +14,6 @@
 #define CETRIS_DROP_PERIOD 2
 #define CETRIS_LINE_CLEAR_DELAY 40
 #define CETRIS_WAIT_ON_CLEAR 0
-
-typedef struct {
-  int8_t x;
-  int8_t y;
-} vec2;
-
 
 typedef enum {
   O, I, S, Z, L, J, T
@@ -71,7 +64,12 @@ struct cetris_game {
   struct tetrimino current;
   uint8_t current_index;
 
-  struct input_manager input;
+  /* input_manager */
+  input_t held_move;
+  input_t prev_move;
+  int next_move_tick;
+  uint8_t can_rotate;
+  uint8_t can_hard_drop;
 
   /* internal game tick */
   int tick;
@@ -89,6 +87,9 @@ struct cetris_game {
   /* long int just incase */
   long int score;
 };
+
+void next_piece(struct cetris_game* g);
+void wipe_board(struct cetris_game* g);
 
 /* API PROTOTYPES FUNCTIONS */
 

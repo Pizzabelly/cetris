@@ -35,17 +35,17 @@
                         "       \\--------------------/"
 #else
 #define BLOCK "[]"
-#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━┓  ┏━━━━━━━━━\n"\
+#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━━━━━━━━━━┓  ┏━━━━━━━━━━━━━━━┓  \n"\
                         "       ┃                    ┃  ┃               ┃  \n"\
-                        "       ┃                    ┃   ━━━━━━━━━┛  \n"\
+                        "       ┃                    ┃  ┗━━━━━━━━━━━━━━━┛  \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
-                        "       ┃                    ┃    ┏━━━━━━┓    \n"\
+                        "       ┃                    ┃    ┏━━━━━━━━━━━┓    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
-                        "       ┃                    ┃    ┗━━━━━━┛    \n"\
+                        "       ┃                    ┃    ┗━━━━━━━━━━━┛    \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
@@ -56,7 +56,7 @@
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
-                        "       ┗━━━━━━━━━━━┛                        "
+                        "       ┗━━━━━━━━━━━━━━━━━━━━┛                        "
 #endif
 
 #define X_OFFSET 8
@@ -105,7 +105,7 @@ void draw_board() {
 	  attron(COLOR_PAIR(game.piece_queue[index].c));
     for (int x = 0; x < 4; x++) {
       for (int y = 0; y < 4; y++) {
-        if (game.piece_queue[index].mat[y][x]) {
+        if (game.piece_queue[index].m[y][x]) {
           if (game.piece_queue[index].t == I) {
             mvaddstr(6 + y, (x * 2) + 36, BLOCK);
           } else {
@@ -162,7 +162,7 @@ int main(void) {
         }
         break;
       default:
-        clear_held_key(&game.input);
+        clear_held_key(&game);
     }
     update_game_tick(&game);
     erase();

@@ -6,6 +6,9 @@
 #include <assert.h>
 
 #include "cetris.h"
+#include "types.h"
+#include "matrix.h"
+#include "input.h"
 
 #ifdef BUILD_TESTS
 #include "test.h"
@@ -15,8 +18,6 @@
 
 static void init_piece_queue(struct cetris_game* g);
 static void shuffle_queue(struct cetris_game* g);
-static void next_piece(struct cetris_game* g);
-static void wipe_board(struct cetris_game* g);
 static void set_constants(struct cetris_game* g);
 
 /* LEVEL DROP SPEED VALUES */
@@ -41,11 +42,11 @@ void init_game(struct cetris_game* g) {
 
   g->current_index = 0;
 
-  g->input.held_move = 0;
-  g->input.prev_move = 0;
-  g->input.next_move_tick = 0;
-  g->input.can_rotate = 0;
-  g->input.can_hard_drop = 0;
+  g->held_move = 0;
+  g->prev_move = 0;
+  g->next_move_tick = 0;
+  g->can_rotate = 0;
+  g->can_hard_drop = 0;
 
   g->lines = 0;
   g->level = 1;
@@ -233,43 +234,43 @@ void wipe_board(struct cetris_game* g) {
 /* MOVEMENT FUNCTIONS */
 
 void move_down(struct cetris_game* g) {
-  if (g->input.held_move != DOWN) {
+  if (g->held_move != DOWN) {
     move_current(g, basic_movements[DOWN]);
   }
-  g->input.held_move = DOWN;
+  g->held_move = DOWN;
 }
 
 void move_right(struct cetris_game* g) {
-  if (g->input.held_move != RIGHT) {
+  if (g->held_move != RIGHT) {
     move_current(g, basic_movements[RIGHT]);
   }
-  g->input.held_move = RIGHT;
+  g->held_move = RIGHT;
 }
 
 void move_left(struct cetris_game* g) {
-  if (g->input.held_move != LEFT) {
+  if (g->held_move != LEFT) {
     move_current(g, basic_movements[LEFT]);
   }
-  g->input.held_move = LEFT;
+  g->held_move = LEFT;
 }
 
 void move_hard_drop(struct cetris_game* g) {
-  if (g->input.held_move != HARD_DROP) {
+  if (g->held_move != HARD_DROP) {
     hard_drop(g);
   }
-  g->input.held_move = HARD_DROP;
+  g->held_move = HARD_DROP;
 }
 
 void rotate_clockwise(struct cetris_game* g) {
-  if (g->input.held_move != ROTATE_CW) {
+  if (g->held_move != ROTATE_CW) {
     rotate_matrix(g, 1);
   }
-  g->input.held_move = ROTATE_CW;
+  g->held_move = ROTATE_CW;
 }
 
 void rotate_counterclockwise(struct cetris_game* g) {
-  if (g->input.held_move != ROTATE_CCW) {
+  if (g->held_move != ROTATE_CCW) {
     rotate_matrix(g, 0);
   }
-  g->input.held_move = ROTATE_CCW;
+  g->held_move = ROTATE_CCW;
 }

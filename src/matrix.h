@@ -2,9 +2,8 @@
 
 #include <stdint.h>
 
+#include "types.h"
 #include "cetris.h"
-
-typedef uint8_t piece_matrix[4][4];
 
 const piece_matrix default_matrices[7];
 const vec2 basic_movements[4];

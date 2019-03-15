@@ -1,6 +1,8 @@
 #include <string.h>
 
 #include "matrix.h"
+#include "types.h"
+#include "cetris.h"
 
 /* SRS WALL KICK VALUES */
 
@@ -90,7 +92,7 @@ void move_current(struct cetris_game* g, vec2 offset) {
   g->current.pos.y += offset.y;
   g->current.pos.x += offset.x;
 
-  int8_t check = check_new_matrix(g, g->current.mat); 
+  int8_t check = check_new_matrix(g, g->current.m); 
   if (check <= 0) {
     g->current.pos.y -= offset.y;
     g->current.pos.x -= offset.x;
@@ -107,7 +109,7 @@ void overlay_current_matrix(struct cetris_game* g) {
   for (uint8_t y = 0; y < 4; y++) {
     for (uint8_t x = 0; x < 4; x++) {
       vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
-      if (g->current.mat[y][x]) {
+      if (g->current.m[y][x]) {
         g->board[r.x][r.y].occupied = 1;
         g->board[r.x][r.y].c = g->current.c;
       }
@@ -123,7 +125,7 @@ void hard_drop(struct cetris_game* g) {
   while (!drop) {
     g->current.pos.y++;
     drop_count++;
-    int8_t check = check_new_matrix(g, g->current.mat);
+    int8_t check = check_new_matrix(g, g->current.m);
     if (check <= 0) {
       g->current.pos.y--;
       drop_count--;
@@ -181,7 +183,7 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
 
   for (uint8_t x = 0; x < 4; x++) {
     for (uint8_t y = 0; y < 4; y++) {
-      if (g->current.mat[y][x]) {
+      if (g->current.m[y][x]) {
         uint8_t new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
         uint8_t new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
 
@@ -256,7 +258,7 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
     }
 
     g->current.r = next;
-    memcpy(g->current.mat, m, sizeof(piece_matrix));
+    memcpy(g->current.m, m, sizeof(piece_matrix));
     wipe_board(g);
   }
 }

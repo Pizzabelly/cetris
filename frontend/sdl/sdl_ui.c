@@ -95,7 +95,7 @@ void draw_stuff() {
   SDL_Rect p = {294, 20, 25, 25};
   for (int x = 0; x < 4; x++) {
     for (int y = 0; y < 4; y++) {
-      if (g.piece_queue[index].mat[y][x]) {
+      if (g.piece_queue[index].m[y][x]) {
         p.x = 319 + (x * 25);
         p.y = 30 + (y * 25);
         if (g.piece_queue[index].t == I) {
@@ -204,7 +204,7 @@ int main(void) {
 	    case SDLK_DOWN:
 	    case SDLK_SPACE:
 	    case SDLK_UP:
-	      clear_held_key(&g.input);
+	      clear_held_key(&g);
 	      break;
 	  }
 	  break;

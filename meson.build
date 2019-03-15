@@ -4,7 +4,7 @@ project('cetris', 'c',
 
 compiler = meson.get_compiler('c')
 
-src = ['src/input.c', 'src/matrix.c', 'src/cetris.c']
+src = ['src/cetris.c', 'src/input.c', 'src/matrix.c']
 inc = include_directories('src')
 
 if host_machine.system() != 'windows'
@@ -15,12 +15,11 @@ endif
 
 src += ['src/test.c']
 sdlinc = []
-sdlttfinc = []
 
 if get_option('build_frontends') == true
   if host_machine.system() == 'windows'
    sdlinc += include_directories('_win\SDL2-2.0.5\include')
-   sdlttfinc += include_directories('_win\SDL2_ttf-2.0.14\include')
+   sdlinc += include_directories('_win\SDL2_ttf-2.0.14\include')
    curses = compiler.find_library('pdcurses', dirs: [meson.source_root() + '/_win/pdcurses'])
    sdl2 = compiler.find_library('SDL2', dirs: [meson.source_root() + '/_win/SDL2-2.0.5/lib/x86'])
    sdl2_ttf = compiler.find_library('SDL2_ttf', dirs: [meson.source_root() + '/_win/SDL2_ttf-2.0.14/lib/x86'])
@@ -34,7 +33,7 @@ if get_option('build_frontends') == true
          include_directories: inc,
          install : false)
   executable('cetris_sdl', [src, 'frontend/sdl/sdl_ui.c'], 
-         include_directories: [inc, sdlttfinc, sdlinc],
+         include_directories: [inc, sdlinc],
 	       dependencies: [sdl2, sdl2_ttf],
          install : false)
 endif
