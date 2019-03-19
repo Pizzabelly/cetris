@@ -65,11 +65,11 @@ struct cetris_game {
   uint8_t current_index;
 
   /* input_manager */
-  input_t held_move;
-  input_t prev_move;
-  int next_move_tick;
-  uint8_t can_rotate;
-  uint8_t can_hard_drop;
+  uint8_t held_moves[7];
+  int das_repeat;
+  input_t prev_das_move;
+  int das_move_tick;
+  int down_move_tick;
 
   /* internal game tick */
   int tick;
@@ -95,9 +95,5 @@ void wipe_board(struct cetris_game* g);
 
 void init_game(struct cetris_game* g);
 void update_game_tick(struct cetris_game* g);
-void move_down(struct cetris_game* g);
-void move_left(struct cetris_game* g);
-void move_right(struct cetris_game* g);
-void move_hard_drop(struct cetris_game* g);
-void rotate_clockwise(struct cetris_game* g);
-void rotate_counterclockwise(struct cetris_game* g);
+void move_peice(struct cetris_game* g, input_t move);
+void stop_holding(struct cetris_game* g, input_t move);

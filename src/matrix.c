@@ -142,7 +142,8 @@ void hard_drop(struct cetris_game* g) {
 void rotate_matrix(struct cetris_game* g, int clockwise) {
   if (g->current.t == O) return;
   
-  rstate next; int8_t wall_kick;
+  rstate next; 
+  int8_t wall_kick;
   switch (g->current.r) {
     case INIT:
      if (clockwise) {
@@ -196,26 +197,6 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
       }
     }
   }
-
-  /*
-  uint8_t wall_kick;
-  switch (g->current.r) {
-    case INIT:
-      wall_kick = (next == RRIGHT) ? 0 : 7;
-      break;
-    case ONCE_RIGHT:
-      wall_kick = (next == INIT) ? 1 : 2;
-      break;
-    case ONCE_LEFT:
-      wall_kick = (next == INIT) ? 6 : 5;
-      break;
-    case TWICE:
-      wall_kick = (next == RRIGHT) ? 3 : 4;
-      break;
-    default:  // check for invalid rotations
-      assert(0);
-  }
-  */
 
   vec2 kick;
   uint8_t set_current = 0;

@@ -7,44 +7,45 @@
 #include "cetris.h"
 
 uint8_t handle_inputs(struct cetris_game* g) {
-  uint8_t did_move = 0;
-  if (g->held_move && !g->next_move_tick) {
-    if (g->held_move == RIGHT || g->held_move == LEFT) {
-      if (g->prev_move == g->held_move) {
-	      g->next_move_tick = g->tick + CETRIS_DAS_PERIOD;
-      } else {
-	      g->next_move_tick = g->tick + CETRIS_DAS_DELAY;
-      }
-    } else {
-      g->next_move_tick = g->tick + CETRIS_DROP_PERIOD;
+  if ((g->held_moves[RIGHT] || g->held_moves[LEFT]) && !g->das_move_tick) {
+    if (g->das_repeat == 0) {
+      g->das_move_tick = g->tick + CETRIS_DAS_DELAY;
+    } else if (g->das_repeat > 0) {
+      g->das_move_tick = g->tick + CETRIS_DAS_PERIOD;
     }
   }
 
-  if (g->next_move_tick && g->tick >= g->next_move_tick) {
-    switch (g->held_move) {
-      case DOWN:
-        g->score++;
-        move_current(g, basic_movements[DOWN]);
-        break;
-      case LEFT: 
-        move_current(g, basic_movements[LEFT]);
-        break;
-      case RIGHT:
-        move_current(g, basic_movements[RIGHT]);
-        break;
+  if (g->held_moves[DOWN] && !g->down_move_tick) {
+    g->down_move_tick = g->tick + CETRIS_DROP_PERIOD;
+  }
+
+  uint8_t did_move = 0;
+  if (g->das_move_tick && g->tick >= g->das_move_tick) {
+    if (g->held_moves[RIGHT]) {
+      if (g->prev_das_move == RIGHT || g->das_repeat == 0) g->das_repeat++;
+      else g->das_repeat = 0;
+      move_current(g, basic_movements[RIGHT]);
+      g->prev_das_move = RIGHT;
     }
+
+    if (g->held_moves[LEFT]) {
+      if (g->prev_das_move == LEFT || g->das_repeat == 0) g->das_repeat++;
+      else g->das_repeat = 0;
+      move_current(g, basic_movements[LEFT]);
+      g->prev_das_move = LEFT;
+    }
+
+    g->das_move_tick = 0;
     did_move = 1;
   }
 
-  if (did_move) {
-    g->next_move_tick = 0;
-    g->prev_move = g->held_move;
+  if (g->down_move_tick && g->tick >= g->down_move_tick) {
+    if (g->held_moves[DOWN]) { 
+      move_current(g, basic_movements[DOWN]);
+    }
+
+    g->down_move_tick = 0;
+    did_move = 1;
   }
   return did_move;
-}
-
-void clear_held_key(struct cetris_game* g) {
-  g->prev_move = 0;
-  g->held_move = 0;
-  g->next_move_tick = 0;
 }

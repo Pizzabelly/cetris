@@ -42,11 +42,11 @@ void init_game(struct cetris_game* g) {
 
   g->current_index = 0;
 
-  g->held_move = 0;
-  g->prev_move = 0;
-  g->next_move_tick = 0;
-  g->can_rotate = 0;
-  g->can_hard_drop = 0;
+  memset(g->held_moves, 0, sizeof(uint8_t) * 7);
+  g->das_repeat = 0;
+  g->prev_das_move = 0;
+  g->das_move_tick = 0;
+  g->down_move_tick = 0;
 
   g->lines = 0;
   g->level = 1;
@@ -135,9 +135,7 @@ void update_game_tick(struct cetris_game* g) {
     did_move = 1;
   }
   
-  if (did_move) {
-    wipe_board(g); 
-  }
+  if (did_move) wipe_board(g); 
 
   g->tick++;
 }
@@ -233,44 +231,32 @@ void wipe_board(struct cetris_game* g) {
 
 /* MOVEMENT FUNCTIONS */
 
-void move_down(struct cetris_game* g) {
-  if (g->held_move != DOWN) {
-    move_current(g, basic_movements[DOWN]);
+void move_peice(struct cetris_game* g, input_t move) {
+  if (!g->held_moves[move]) {
+    switch (move) {
+      case LEFT:
+      case RIGHT:
+      case DOWN:
+        move_current(g, basic_movements[move]);
+        break;
+      case HARD_DROP:
+        hard_drop(g);
+        break;
+      case ROTATE_CW:
+        rotate_matrix(g, 1);
+        break;
+      case ROTATE_CCW:
+        rotate_matrix(g, 0);
+        break;
+    }
   }
-  g->held_move = DOWN;
+  g->held_moves[move] = 1;
 }
 
-void move_right(struct cetris_game* g) {
-  if (g->held_move != RIGHT) {
-    move_current(g, basic_movements[RIGHT]);
-  }
-  g->held_move = RIGHT;
-}
-
-void move_left(struct cetris_game* g) {
-  if (g->held_move != LEFT) {
-    move_current(g, basic_movements[LEFT]);
-  }
-  g->held_move = LEFT;
-}
-
-void move_hard_drop(struct cetris_game* g) {
-  if (g->held_move != HARD_DROP) {
-    hard_drop(g);
-  }
-  g->held_move = HARD_DROP;
-}
-
-void rotate_clockwise(struct cetris_game* g) {
-  if (g->held_move != ROTATE_CW) {
-    rotate_matrix(g, 1);
-  }
-  g->held_move = ROTATE_CW;
-}
-
-void rotate_counterclockwise(struct cetris_game* g) {
-  if (g->held_move != ROTATE_CCW) {
-    rotate_matrix(g, 0);
-  }
-  g->held_move = ROTATE_CCW;
+void stop_holding(struct cetris_game* g, input_t move) {
+  g->held_moves[move] = 0;
+  if (move == RIGHT || move == LEFT) {
+    g->das_move_tick = 0;
+    g->das_repeat = 0;
+  } else if (move == DOWN) g->down_move_tick = 0;
 }

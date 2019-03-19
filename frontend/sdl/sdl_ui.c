@@ -1,4 +1,5 @@
 #ifdef _WIN32
+#define _CRT_SECURE_NO_WARNINGS
 #define SDL_DISABLE_IMMINTRIN_H
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -26,9 +27,9 @@ TTF_Font* font;
 TTF_Font* big_font;
 
 typedef struct {
-  int r;
-  int g;
-  int b;
+  Uint8 r;
+  Uint8 g;
+  Uint8 b;
 } sdl_color;
 
 sdl_color colors[8] = {
@@ -69,8 +70,8 @@ void draw_text(char* string, int x, int y, int black) {
     msgsurf = TTF_RenderText_Blended(font, msg, (SDL_Color){255, 255, 255, 255});
   }
   SDL_Texture *msgtex = SDL_CreateTextureFromSurface(render, msgsurf);
-  SDL_Rect fromrec = {0, 0, msgsurf->w, msgsurf->h};
-  SDL_Rect torec = {x, y, msgsurf->w, msgsurf->h};
+  SDL_Rect fromrec = (SDL_Rect){0, 0, msgsurf->w, msgsurf->h};
+  SDL_Rect torec = (SDL_Rect){x, y, msgsurf->w, msgsurf->h};
   SDL_RenderCopy(render, msgtex, &fromrec, &torec);
   SDL_DestroyTexture(msgtex);
   SDL_FreeSurface(msgsurf);
@@ -184,30 +185,33 @@ int main(void) {
         case SDL_KEYDOWN:
           switch (e.key.keysym.sym) {
             case SDLK_LEFT:
-              move_left(&g); break;
+              move_peice(&g, LEFT); break;
             case SDLK_RIGHT:
-              move_right(&g); break;
+              move_peice(&g, RIGHT); break;
             case SDLK_DOWN:
-              move_down(&g); break;
+              move_peice(&g, DOWN); break;
             case SDLK_SPACE:
-              move_hard_drop(&g); break;
+              move_peice(&g, HARD_DROP); break;
             case SDLK_UP:
-              rotate_clockwise(&g); break;
+              move_peice(&g, ROTATE_CW); break;
             case SDLK_r:
               if (g.game_over) init_game(&g);
           }
-	  break;
+	        break;
         case SDL_KEYUP:
-	  switch (e.key.keysym.sym) {
-	    case SDLK_LEFT:
-	    case SDLK_RIGHT:
-	    case SDLK_DOWN:
-	    case SDLK_SPACE:
-	    case SDLK_UP:
-	      clear_held_key(&g);
-	      break;
-	  }
-	  break;
+          switch (e.key.keysym.sym) {
+            case SDLK_LEFT:
+              stop_holding(&g, LEFT); break;
+            case SDLK_RIGHT:
+              stop_holding(&g, RIGHT); break;
+            case SDLK_DOWN:
+              stop_holding(&g, DOWN); break;
+            case SDLK_SPACE:
+              stop_holding(&g, HARD_DROP); break;
+            case SDLK_UP:
+              stop_holding(&g, ROTATE_CW); break;
+          }
+	        break;
       }
     }
     update_game_tick(&g);

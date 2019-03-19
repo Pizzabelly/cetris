@@ -68,7 +68,7 @@ void curses_init() {
   setlocale(LC_CTYPE, "");
   initscr();
   noecho();
-  keypad(stdscr, TRUE);
+  //keypad(stdscr, TRUE);
   curs_set(0);
   timeout(1000 / CETRIS_HZ);
 

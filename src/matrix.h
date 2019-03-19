@@ -5,8 +5,8 @@
 #include "types.h"
 #include "cetris.h"
 
-const piece_matrix default_matrices[7];
-const vec2 basic_movements[4];
+extern const piece_matrix default_matrices[7];
+extern const vec2 basic_movements[4];
 
 void move_current(struct cetris_game* g, vec2 offset);
 void overlay_current_matrix(struct cetris_game* g);
