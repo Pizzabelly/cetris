@@ -89,6 +89,8 @@ const vec2 basic_movements[4] = {
 };
 
 void move_current(struct cetris_game* g, vec2 offset) {
+  if (g->game_over) return;
+
   g->current.pos.y += offset.y;
   g->current.pos.x += offset.x;
 
@@ -140,6 +142,7 @@ void hard_drop(struct cetris_game* g) {
 }
 
 void rotate_matrix(struct cetris_game* g, int clockwise) {
+  if (g->game_over) return;
   if (g->current.t == O) return;
   
   rstate next; 
@@ -245,10 +248,9 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
 }
 
 int8_t check_new_matrix(struct cetris_game* g, piece_matrix m) {
-  vec2 r;
   for (uint8_t x = 0; x < 4; x++) {
     for (uint8_t y = 0; y < 4; y++) {
-      r = (vec2){g->current.pos.x + x, g->current.pos.y + y};
+      vec2 r = (vec2){g->current.pos.x + x, g->current.pos.y + y};
       if (m[y][x]) { 
         if (r.x > CETRIS_BOARD_X - 1 || r.x < 0) 
           return 0;
