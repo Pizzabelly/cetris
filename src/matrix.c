@@ -229,12 +229,14 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
       for (uint8_t i = 0; i < 4; i++) {
         g->current.pos.x += basic_movements[i].x;
         g->current.pos.y += basic_movements[i].y;
-        if (check_new_matrix(g, m) == 1) {
+
+        if (check_new_matrix(g, m) == 1)
           did_tspin = 0;
-        }
+
         g->current.pos.x -= basic_movements[i].x;
         g->current.pos.y -= basic_movements[i].y;
       }
+
       if (did_tspin) {
         if (did_kick) g->mini_tspin = 1;
         else g->tspin = 1;
