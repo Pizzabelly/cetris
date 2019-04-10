@@ -1,0 +1,343 @@
+; Zilog eZ80 ANSI C Compiler Release 3.4
+; -optsize -noreduceopt -nomodsect -peephole -globalopt
+; -localcse -const=ROM 
+	FILE	"SRC\MAIN.C"
+	.assume ADL=1
+	SEGMENT STRSECT
+L__0:
+	DB	"AppVar"
+	DB	0
+	SEGMENT DATA
+_appvarName:
+	DW24	L__0
+	SEGMENT BSS
+_data:
+	DS	17
+;    1	#include <stdbool.h>
+;    2	#include <stddef.h>
+;    3	#include <stdint.h>
+;    4	#include <tice.h>
+;    5	
+;    6	#include <stdio.h>
+;    7	#include <stdlib.h>
+;    8	#include <string.h>
+;    9	
+;   10	#include <fileioc.h>
+;   11	
+;   12	/* Declare some variables */
+;   13	const char *appvarName = "AppVar";
+;   14	
+;   15	typedef struct {
+;   16	    char name[15];
+;   17	    uint8_t var1;
+;   18	    uint8_t var2;
+;   19	} data_t;
+;   20	
+;   21	data_t data;
+	SEGMENT CODE
+;   22	
+;   23	#define VAR1_VALUE 10
+;   24	#define VAR2_VALUE 20
+;   25	
+;   26	/* Function prototypes */
+;   27	void printText(int8_t xpos, int8_t ypos, const char *text);
+;   28	
+;   29	/* Main Function */
+;   30	void main(void) {
+_main:
+	LD	HL,-11
+	CALL	__frameset
+;   31	    char nameBuffer[10];
+;   32	    ti_var_t myAppVar;
+;   33	    int x;
+;   34	
+;   35	    /* Clear the homescreen */
+;   36	    os_ClrHome();
+	LD	BC,_asm_ClrLCD
+	PUSH	BC
+	CALL	__OS
+	POP	BC
+	LD	BC,_asm_HomeUp
+	PUSH	BC
+	CALL	__OS
+	POP	BC
+	LD	BC,_asm_DrawStatusBar
+	PUSH	BC
+	CALL	__OS
+	POP	BC
+;   37	
+;   38	    /* Declare some variable values */
+;   39	    strcpy(data.name, "My Data");
+	LD	BC,L__1
+	PUSH	BC
+	LD	BC,_data
+	PUSH	BC
+	CALL	_strcpy
+	POP	BC
+	POP	BC
+;   40	    data.var1 = VAR1_VALUE;
+	LD	A,10
+	LD	(_data+15),A
+;   41	    data.var2 = VAR2_VALUE;
+	LD	A,20
+	LD	(_data+16),A
+;   42	
+;   43	    /* Close any files that may be open already */
+;   44	    ti_CloseAll();
+	CALL	_ti_CloseAll
+;   45	
+;   46	    /* Open a new variable; deleting it if it already exists */
+;   47	    myAppVar = ti_Open(appvarName, "w");
+	LD	BC,L__2
+	PUSH	BC
+	LD	BC,(_appvarName)
+	PUSH	BC
+	CALL	_ti_Open
+	POP	BC
+	POP	BC
+	LD	(IX+-1),A
+;   48	
+;   49	    /* Make sure we opened okay */
+;   50	    if (!myAppVar)                                          goto err;
+	OR	A,A
+	JR	Z,L_3
+;   51	
+;   52	    /* Write the structure to the appvar */
+;   53	    if (ti_Write(&data, sizeof(data_t), 1, myAppVar) != 1)  goto err;
+	LD	C,(IX+-1)
+	LD	B,0
+	PUSH	BC
+	LD	BC,1
+	PUSH	BC
+	LD	BC,17
+	PUSH	BC
+	LD	BC,_data
+	PUSH	BC
+	CALL	_ti_Write
+	POP	BC
+	POP	BC
+	POP	BC
+	POP	BC
+	LD	BC,1
+	OR	A,A
+	SBC	HL,BC
+	JR	NZ,L_3
+;   54	
+;   55	    /* Go back to the start of the file */
+;   56	    if (ti_Rewind(myAppVar) == EOF)                         goto err;
+	LD	C,(IX+-1)
+	LD	B,0
+	PUSH	BC
+	CALL	_ti_Rewind
+	POP	BC
+	LD	BC,16777215
+	OR	A,A
+	SBC	HL,BC
+	JR	Z,L_3
+;   57	
+;   58	    /* Let's read it just to make sure we wrote it correctly */
+;   59	    if (ti_Read(&data, sizeof(data_t), 1, myAppVar) != 1)   goto err;
+	LD	C,(IX+-1)
+	LD	B,0
+	PUSH	BC
+	LD	BC,1
+	PUSH	BC
+	LD	BC,17
+	PUSH	BC
+	LD	BC,_data
+	PUSH	BC
+	CALL	_ti_Read
+	POP	BC
+	POP	BC
+	POP	BC
+	POP	BC
+	LD	BC,1
+	OR	A,A
+	SBC	HL,BC
+	JR	NZ,L_3
+;   60	
+;   61	    /* Make sure we read these variables correctly too */
+;   62	    if (data.var1 != VAR1_VALUE && data.var2 != VAR2_VALUE) goto err;
+	LD	A,(_data+15)
+	CP	A,10
+	JR	Z,L_14
+	LD	A,(_data+16)
+	CP	A,20
+	JR	NZ,L_3
+L_14:
+;   63	
+;   64	    /* Ensure the name of the AppVar is correct */
+;   65	    ti_GetName(nameBuffer, myAppVar);
+	LD	C,(IX+-1)
+	LD	B,0
+	PUSH	BC
+	PEA	IX+-11
+	CALL	_ti_GetName
+	POP	BC
+	POP	BC
+;   66	
+;   67	    printText(0, 0, "Appvar: ");
+	LD	BC,L__9
+	PUSH	BC
+	LD	BC,0
+	PUSH	BC
+	PUSH	BC
+	CALL	_printText
+	POP	BC
+	POP	BC
+	POP	BC
+;   68	    printText(8, 0, nameBuffer);
+	PEA	IX+-11
+	LD	BC,0
+	PUSH	BC
+	LD	BC,8
+	PUSH	BC
+	CALL	_printText
+	POP	BC
+	POP	BC
+	POP	BC
+;   69	    printText(0, 1, "Read was successful");
+	LD	BC,L__10
+	PUSH	BC
+	LD	BC,1
+	PUSH	BC
+	LD	BC,0
+	PUSH	BC
+	CALL	_printText
+	POP	BC
+	POP	BC
+	POP	BC
+;   70	    goto noerr;
+	JR	L_16
+L_3:
+;   71	
+;   72	err:
+;   73	    printText(0, 0, "An error occured");
+	LD	BC,L__11
+	PUSH	BC
+	LD	BC,0
+	PUSH	BC
+	PUSH	BC
+	CALL	_printText
+	POP	BC
+	POP	BC
+	POP	BC
+;   74	noerr:
+;   75	
+;   76	    /* Pause */
+;   77	    while (!os_GetCSC());
+L_16:
+	CALL	_os_GetCSC
+	OR	A,A
+	JR	Z,L_16
+;   78	
+;   79	    /* Close all open files */
+;   80	    ti_CloseAll();
+	CALL	_ti_CloseAll
+;   81	}
+	LD	SP,IX
+	POP	IX
+	RET	
+
+
+;**************************** _main ***************************
+;Name                         Addr/Register   Size   Type
+;_os_GetCSC                          IMPORT  -----   function
+;_printText                          IMPORT  -----   function
+;_ti_GetName                         IMPORT  -----   function
+;_ti_Read                            IMPORT  -----   function
+;_ti_Rewind                          IMPORT  -----   function
+;_ti_Write                           IMPORT  -----   function
+;_appvarName                         STATIC      3   variable
+;_ti_Open                            IMPORT  -----   function
+;_ti_CloseAll                        IMPORT  -----   function
+;_data                               STATIC     17   variable
+;_strcpy                             IMPORT  -----   function
+;_asm_DrawStatusBar                  IMPORT  -----   function
+;_asm_HomeUp                         IMPORT  -----   function
+;_asm_ClrLCD                         IMPORT  -----   function
+;__OS                                IMPORT  -----   function
+;nameBuffer                           IX-11     10   variable
+;myAppVar                              IX-1      1   variable
+
+
+; Stack Frame Size: 17 (bytes)
+;       Spill Code: 0 (instruction)
+
+
+	SEGMENT STRSECT
+L__1:
+	DB	"My Data"
+	DB	0
+L__2:
+	DB	"w"
+	DB	0
+L__9:
+	DB	"Appvar: "
+	DB	0
+L__10:
+	DB	"Read was successful"
+	DB	0
+L__11:
+	DB	"An error occured"
+	DB	0
+	SEGMENT CODE
+;   82	
+;   83	/* Draw text on the homescreen at the given X/Y location */
+;   84	void printText(int8_t xpos, int8_t ypos, const char *text) {
+_printText:
+	CALL	__frameset0
+;   85	    os_SetCursorPos(ypos, xpos);
+	LD	C,(IX+6)
+	LD	B,0
+	PUSH	BC
+	LD	C,(IX+9)
+	PUSH	BC
+	CALL	_os_SetCursorPos
+	POP	BC
+	POP	BC
+;   86	    os_PutStrFull(text);
+	LD	BC,(IX+12)
+	PUSH	BC
+	CALL	_os_PutStrFull
+	POP	BC
+;   87	}
+	LD	SP,IX
+	POP	IX
+	RET	
+
+
+;**************************** _printText ***************************
+;Name                         Addr/Register   Size   Type
+;_os_PutStrFull                      IMPORT  -----   function
+;_os_SetCursorPos                    IMPORT  -----   function
+;text                                 IX+12      3   parameter
+;ypos                                  IX+9      1   parameter
+;xpos                                  IX+6      1   parameter
+
+
+; Stack Frame Size: 15 (bytes)
+;       Spill Code: 0 (instruction)
+
+
+	XREF _strcpy:ROM
+	XREF _ti_GetName:ROM
+	XREF _ti_Rewind:ROM
+	XREF _ti_Read:ROM
+	XREF _ti_Write:ROM
+	XREF _ti_Open:ROM
+	XREF _ti_CloseAll:ROM
+	XREF _asm_DrawStatusBar:ROM
+	XREF _asm_ClrLCD:ROM
+	XREF _asm_HomeUp:ROM
+	XREF __OS:ROM
+	XREF _os_GetCSC:ROM
+	XREF _os_PutStrFull:ROM
+	XREF _os_SetCursorPos:ROM
+	XREF __frameset0:ROM
+	XREF __frameset:ROM
+	XDEF _printText
+	XDEF _main
+	XDEF _data
+	XDEF _appvarName
+	END

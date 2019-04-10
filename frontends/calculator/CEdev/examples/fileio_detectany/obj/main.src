@@ -1,0 +1,190 @@
+; Zilog eZ80 ANSI C Compiler Release 3.4
+; -optsize -noreduceopt -nomodsect -peephole -globalopt
+; -localcse -const=ROM 
+	FILE	"SRC\MAIN.C"
+	.assume ADL=1
+	SEGMENT CODE
+;    1	#include <stdbool.h>
+;    2	#include <stddef.h>
+;    3	#include <stdint.h>
+;    4	#include <tice.h>
+;    5	
+;    6	#include <stdio.h>
+;    7	#include <stdlib.h>
+;    8	#include <string.h>
+;    9	
+;   10	#include <fileioc.h>
+;   11	
+;   12	/* Function prototypes */
+;   13	void printText(int8_t xpos, int8_t ypos, const char *text);
+;   14	
+;   15	/* Main Function */
+;   16	void main(void) {
+_main:
+	LD	HL,-11
+	CALL	__frameset
+;   17	    /* Declare some variables -- search_pos must be NULL to begin with */
+;   18	    uint8_t *search_pos = NULL, type;
+	LD	BC,0
+	LD	(IX+-11),BC
+;   19	    int8_t y = 0;
+	LD	(IX+-1),0
+;   20	    ti_var_t myVar;
+;   21	    char *var_name;
+;   22	
+;   23	    /* First couple bytes of the LibLoad AppVar, which is known to exist *
+;   24	    /* Technically is a null-terminated string, if an odd looking one */
+;   25	    const char search_string[] = { 0xBF, 0xFE, 0x00 };
+	LEA	DE,IX+-8
+;   26	
+;   27	    /* Clear the homescreen */
+;   28	    os_ClrHome();
+	LD	BC,_asm_ClrLCD
+	PUSH	BC
+	LD	HL,_0temp0
+	LD	BC,3
+	LDIR	
+	CALL	__OS
+	POP	BC
+	LD	BC,_asm_HomeUp
+	PUSH	BC
+	CALL	__OS
+	POP	BC
+	LD	BC,_asm_DrawStatusBar
+	PUSH	BC
+	CALL	__OS
+	POP	BC
+	JR	L_5
+;   29	
+;   30	    /* Find all of the variables that start with this string */
+;   31	    while ((var_name = ti_DetectAny(&search_pos, search_string, &type)) != NULL) {
+L_6:
+;   32	        if (type == TI_APPVAR_TYPE) {
+	LD	A,(IX+-2)
+	CP	A,21
+	JR	NZ,L_5
+;   33	            /* Print the name of the variable (Should be LibLoad) */
+;   34	            printText(0, y++, var_name);
+	LD	C,(IX+-1)
+	INC	(IX+-1)
+	LD	DE,(IX+-5)
+	PUSH	DE
+	LD	B,0
+	PUSH	BC
+	LD	BC,0
+	PUSH	BC
+	CALL	_printText
+	POP	BC
+	POP	BC
+	POP	BC
+;   35	        }
+;   36	    }
+L_5:
+	PEA	IX+-2
+	PEA	IX+-8
+	PEA	IX+-11
+	CALL	_ti_DetectAny
+	POP	BC
+	POP	BC
+	POP	BC
+	LD	(IX+-5),HL
+	CALL	__icmpzero
+	JR	NZ,L_6
+;   37	
+;   38	    /* Wait for a key */
+;   39	    while (!os_GetCSC());
+L_9:
+	CALL	_os_GetCSC
+	OR	A,A
+	JR	Z,L_9
+;   40	
+;   41	    /* Close all open files */
+;   42	    ti_CloseAll();
+	CALL	_ti_CloseAll
+;   43	}
+	LD	SP,IX
+	POP	IX
+	RET	
+
+
+;**************************** _main ***************************
+;Name                         Addr/Register   Size   Type
+;_ti_CloseAll                        IMPORT  -----   function
+;_os_GetCSC                          IMPORT  -----   function
+;_ti_DetectAny                       IMPORT  -----   function
+;_printText                          IMPORT  -----   function
+;_asm_DrawStatusBar                  IMPORT  -----   function
+;_asm_HomeUp                         IMPORT  -----   function
+;_asm_ClrLCD                         IMPORT  -----   function
+;__OS                                IMPORT  -----   function
+;_0temp0                             STATIC      3   variable
+;search_pos                           IX-11      3   variable
+;search_string                         IX-8      3   variable
+;var_name                              IX-5      3   variable
+;type                                  IX-2      1   variable
+;y                                     IX-1      1   variable
+
+
+; Stack Frame Size: 17 (bytes)
+;       Spill Code: 0 (instruction)
+
+
+	SEGMENT TEXT
+_0temp0:
+	DB	191
+	DB	254
+	DB	0
+	SEGMENT CODE
+;   44	
+;   45	/* Draw text on the homescreen at the given X/Y location */
+;   46	void printText(int8_t xpos, int8_t ypos, const char *text) {
+_printText:
+	CALL	__frameset0
+;   47	    os_SetCursorPos(ypos, xpos);
+	LD	C,(IX+6)
+	LD	B,0
+	PUSH	BC
+	LD	C,(IX+9)
+	PUSH	BC
+	CALL	_os_SetCursorPos
+	POP	BC
+	POP	BC
+;   48	    os_PutStrFull(text);
+	LD	BC,(IX+12)
+	PUSH	BC
+	CALL	_os_PutStrFull
+	POP	BC
+;   49	}
+	LD	SP,IX
+	POP	IX
+	RET	
+
+
+;**************************** _printText ***************************
+;Name                         Addr/Register   Size   Type
+;_os_PutStrFull                      IMPORT  -----   function
+;_os_SetCursorPos                    IMPORT  -----   function
+;text                                 IX+12      3   parameter
+;ypos                                  IX+9      1   parameter
+;xpos                                  IX+6      1   parameter
+
+
+; Stack Frame Size: 15 (bytes)
+;       Spill Code: 0 (instruction)
+
+
+	XREF _ti_DetectAny:ROM
+	XREF _ti_CloseAll:ROM
+	XREF _asm_DrawStatusBar:ROM
+	XREF _asm_ClrLCD:ROM
+	XREF _asm_HomeUp:ROM
+	XREF __OS:ROM
+	XREF _os_GetCSC:ROM
+	XREF _os_PutStrFull:ROM
+	XREF _os_SetCursorPos:ROM
+	XREF __frameset0:ROM
+	XREF __frameset:ROM
+	XREF __icmpzero:ROM
+	XDEF _printText
+	XDEF _main
+	END
