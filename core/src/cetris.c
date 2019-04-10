@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "cetris.h"
 #include "types.h"
@@ -22,7 +23,7 @@ static void set_constants(struct cetris_game* g);
 
 /* LEVEL DROP SPEED VALUES */
 
-static const uint8_t level_drop_delay[20] = {
+static const u32 level_drop_delay[20] = {
   48, 43, 38, 33, 28, 23, 18, 13, 8, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3 
 };
   
@@ -42,7 +43,7 @@ void init_game(struct cetris_game* g) {
 
   g->current_index = 0;
 
-  memset(g->held_moves, 0, sizeof(uint8_t) * 7);
+  memset(g->held_moves, 0, sizeof(bool) * 7);
   g->das_repeat = 0;
   g->prev_das_move = 0;
   g->das_move_tick = 0;
@@ -50,10 +51,10 @@ void init_game(struct cetris_game* g) {
 
   g->lines = 0;
   g->level = 1;
-  g->game_over = 0;
+  g->game_over = false;
 
-  g->tspin = 0;
-  g->mini_tspin = 0;
+  g->tspin = false;
+  g->mini_tspin = false;
 
   g->score = 0;
 
@@ -64,7 +65,7 @@ void init_game(struct cetris_game* g) {
 }
 
 void init_piece_queue(struct cetris_game* g) {
-  for (uint8_t i = 0; i < 7; i++) {
+  for (u8 i = 0; i < 7; i++) {
     switch (i) {
       case 0: 
         g->piece_queue[i].t = O;
@@ -103,9 +104,9 @@ void init_piece_queue(struct cetris_game* g) {
 }
 
 void shuffle_queue(struct cetris_game* g) {
-  for (uint8_t i = 0; i < 7; i++) {
+  for (u8 i = 0; i < 7; i++) {
     struct tetrimino t = g->piece_queue[i];
-    uint8_t rand_index = rand() % 7;
+    u8 rand_index = rand() % 7;
     g->piece_queue[i] = g->piece_queue[rand_index];
     g->piece_queue[rand_index] = t;
   }
@@ -114,10 +115,10 @@ void shuffle_queue(struct cetris_game* g) {
 void update_game_tick(struct cetris_game* g) {
   if (g->game_over) return;
 
-  uint8_t did_move = 0;
+  bool did_move = false;
   if (g->tick == g->next_drop_tick) {
     move_current(g, basic_movements[DOWN]);
-    did_move = 1;
+    did_move = true;
     g->next_drop_tick = g->tick + level_drop_delay[g->level - 1];
   }
 
@@ -132,7 +133,7 @@ void update_game_tick(struct cetris_game* g) {
   }
 
   if (handle_inputs(g)) {
-    did_move = 1;
+    did_move = true;
   }
   
   if (did_move) wipe_board(g); 
@@ -145,7 +146,7 @@ void next_piece(struct cetris_game* g) {
 
   g->current = g->piece_queue[g->current_index];
   if (check_new_matrix(g, g->current.m) <= 0) {
-    g->game_over = 1;
+    g->game_over = true;
   }
   g->current_index++;
 
@@ -156,14 +157,14 @@ void next_piece(struct cetris_game* g) {
 }
 
 void set_constants(struct cetris_game* g) {
-  for (uint8_t x = 0; x < CETRIS_BOARD_X; x++) { 
-    for (uint8_t y = 0; y < CETRIS_BOARD_Y; y++) {
+  for (u8 x = 0; x < CETRIS_BOARD_X; x++) { 
+    for (u8 y = 0; y < CETRIS_BOARD_Y; y++) {
       if (g->board[x][y].occupied) g->board[x][y].constant = 1;
     }
   }
 }
 
-void add_score(struct cetris_game* g, int lines) {
+void add_score(struct cetris_game* g, u8 lines) {
   if (!g->tspin && !g->mini_tspin) {
     switch (lines) {
       case 1: g->score += 100 * g->level; break;
@@ -178,40 +179,40 @@ void add_score(struct cetris_game* g, int lines) {
       case 2: g->score += 1200 * g->level; break;
       case 3: g->score += 1600 * g->level; break;
     }
-    g->tspin = 0;
+    g->tspin = false;
   } else if (g->mini_tspin) {
     switch (lines) {
       case 0: g->score += 100 * g->level; break;
       case 1: g->score += 200 * g->level; break;
       case 2: g->score += 400 * g->level; break;
     }
-    g->mini_tspin = 0;
+    g->mini_tspin = false;
   }
 }
 
 void wipe_board(struct cetris_game* g) {
-  uint8_t lines_cleared = 0;
-  for (uint8_t y = 0; y < CETRIS_BOARD_Y; y++) {
-    uint8_t clear_line = 1;
-    for (uint8_t x = 0; x < CETRIS_BOARD_X; x++) {
+  uint32_t lines_cleared = 0;
+  for (u8 y = 0; y < CETRIS_BOARD_Y; y++) {
+    bool clear_line = true;
+    for (u8 x = 0; x < CETRIS_BOARD_X; x++) {
       if (!g->board[x][y].constant) { 
         memset(&g->board[x][y], 0, sizeof(slot));
       }
 
       if (g->board[x][y].remove_tick && g->board[x][y].remove_tick <= g->tick) {
         memset(&g->board[x][y], 0, sizeof(slot));
-        for (int8_t s = y - 1; s >= 0; s--) {
+        for (i8 s = y - 1; s >= 0; s--) {
           g->board[x][s + 1] = g->board[x][s];
         }
       }
 
       if (!g->board[x][y].occupied || g->board[x][y].remove_tick > 0) {
-        clear_line = 0;
+        clear_line = false;
       }
     }
     if (clear_line) {
       lines_cleared++;
-      for (uint8_t x = 0; x < CETRIS_BOARD_X; x++) {
+      for (u8 x = 0; x < CETRIS_BOARD_X; x++) {
         g->board[x][y].remove_tick = g->tick + CETRIS_LINE_CLEAR_DELAY;
       }
     }
@@ -250,11 +251,11 @@ void move_peice(struct cetris_game* g, input_t move) {
         break;
     }
   }
-  g->held_moves[move] = 1;
+  g->held_moves[move] = true;
 }
 
 void stop_holding(struct cetris_game* g, input_t move) {
-  g->held_moves[move] = 0;
+  g->held_moves[move] = false;
   if (move == RIGHT || move == LEFT) {
     g->das_move_tick = 0;
     g->das_repeat = 0;

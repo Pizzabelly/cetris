@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "types.h"
 
@@ -43,13 +44,13 @@ struct tetrimino {
   color c;
   piece_matrix m;
   vec2 pos;
-  int lock_tick;
+  u32 lock_tick;
 };
 
 typedef struct {
-  uint8_t occupied;
-  uint8_t constant;
-  int remove_tick;
+  bool occupied;
+  bool constant;
+  u32 remove_tick;
   color c;
 } slot;
 
@@ -62,30 +63,30 @@ struct cetris_game {
 
   /* current tetrimino */
   struct tetrimino current;
-  uint8_t current_index;
+  u8 current_index;
 
   /* input_manager */
-  uint8_t held_moves[7];
-  int das_repeat;
+  bool held_moves[7];
   input_t prev_das_move;
-  int das_move_tick;
-  int down_move_tick;
+  u8 das_repeat;
+  u32 das_move_tick;
+  u32 down_move_tick;
 
   /* internal game tick */
-  int tick;
-  int next_drop_tick;
+  u32 tick;
+  u32 next_drop_tick;
 
   /* progress trackers */
-  int lines;
-  uint8_t level;
-  uint8_t game_over;
+  u32 lines;
+  u32 level;
+  bool game_over;
 
   /* scoring flags */
-  uint8_t tspin;
-  uint8_t mini_tspin;
+  bool tspin;
+  bool mini_tspin;
 
-  /* long int just incase */
-  long int score;
+  /* score counter  */
+  u64 score;
 };
 
 void next_piece(struct cetris_game* g);

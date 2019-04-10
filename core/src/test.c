@@ -1,7 +1,7 @@
 #include "test.h"
 #include "cetris.h"
 
-int tspin_board[20][10] = {
+u8 tspin_board[20][10] = {
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -24,7 +24,7 @@ int tspin_board[20][10] = {
   { 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 }
 };
 
-int tspin_no_lines_board[20][10] = {
+u8 tspin_no_lines_board[20][10] = {
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -48,7 +48,7 @@ int tspin_no_lines_board[20][10] = {
 };
 
 void apply_test_board(struct cetris_game* g, enum tests t) {
-  int (*board)[20][10];
+  u8 (*board)[20][10];
   switch (t) {
     case TSPIN:
       board = &tspin_board;
@@ -59,8 +59,8 @@ void apply_test_board(struct cetris_game* g, enum tests t) {
     default:
       return;
   }
-  for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
-    for (int x = 0; x < 10; x++) {
+  for (u8 y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
+    for (u8 x = 0; x < 10; x++) {
       if ((*board)[y - CETRIS_BOARD_VISABLE][x]) {
         g->board[x][y].occupied = 1;
         g->board[x][y].constant = 1;

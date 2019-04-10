@@ -6,7 +6,7 @@
 #include "matrix.h"
 #include "cetris.h"
 
-uint8_t handle_inputs(struct cetris_game* g) {
+bool handle_inputs(struct cetris_game* g) {
   if ((g->held_moves[RIGHT] || g->held_moves[LEFT]) && !g->das_move_tick) {
     if (g->das_repeat == 0) {
       g->das_move_tick = g->tick + CETRIS_DAS_DELAY;
@@ -19,7 +19,7 @@ uint8_t handle_inputs(struct cetris_game* g) {
     g->down_move_tick = g->tick + CETRIS_DROP_PERIOD;
   }
 
-  uint8_t did_move = 0;
+  bool did_move = false;
   if (g->das_move_tick && g->tick >= g->das_move_tick) {
     if (g->held_moves[RIGHT]) {
       if (g->prev_das_move == RIGHT || g->das_repeat == 0) g->das_repeat++;
@@ -36,7 +36,7 @@ uint8_t handle_inputs(struct cetris_game* g) {
     }
 
     g->das_move_tick = 0;
-    did_move = 1;
+    did_move = true;
   }
 
   if (g->down_move_tick && g->tick >= g->down_move_tick) {
@@ -45,7 +45,7 @@ uint8_t handle_inputs(struct cetris_game* g) {
     }
 
     g->down_move_tick = 0;
-    did_move = 1;
+    did_move = true;
   }
   return did_move;
 }

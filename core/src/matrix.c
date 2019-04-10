@@ -94,7 +94,7 @@ void move_current(struct cetris_game* g, vec2 offset) {
   g->current.pos.y += offset.y;
   g->current.pos.x += offset.x;
 
-  int8_t check = check_new_matrix(g, g->current.m); 
+  int32_t check = check_new_matrix(g, g->current.m); 
   if (check <= 0) {
     g->current.pos.y -= offset.y;
     g->current.pos.x -= offset.x;
@@ -108,8 +108,8 @@ void move_current(struct cetris_game* g, vec2 offset) {
 }
 
 void overlay_current_matrix(struct cetris_game* g) {
-  for (uint8_t y = 0; y < 4; y++) {
-    for (uint8_t x = 0; x < 4; x++) {
+  for (uint32_t y = 0; y < 4; y++) {
+    for (uint32_t x = 0; x < 4; x++) {
       vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
       if (g->current.m[y][x]) {
         g->board[r.x][r.y].occupied = 1;
@@ -122,16 +122,16 @@ void overlay_current_matrix(struct cetris_game* g) {
 void hard_drop(struct cetris_game* g) {
   if (g->game_over) return;
 
-  uint8_t drop = 0;
-  uint8_t drop_count = 0;
+  bool drop = false;
+  u8 drop_count = 0;
   while (!drop) {
     g->current.pos.y++;
     drop_count++;
-    int8_t check = check_new_matrix(g, g->current.m);
+    i8 check = check_new_matrix(g, g->current.m);
     if (check <= 0) {
       g->current.pos.y--;
       drop_count--;
-      drop = 1;
+      drop = true;
     }
   }
   
@@ -141,12 +141,12 @@ void hard_drop(struct cetris_game* g) {
   next_piece(g);
 }
 
-void rotate_matrix(struct cetris_game* g, int clockwise) {
+void rotate_matrix(struct cetris_game* g, bool clockwise) {
   if (g->game_over) return;
   if (g->current.t == O) return;
   
   rstate next; 
-  int8_t wall_kick;
+  u8 wall_kick = 0;
   switch (g->current.r) {
     case INIT:
      if (clockwise) {
@@ -185,11 +185,11 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
   piece_matrix m;
   memset(m, 0, sizeof(piece_matrix));
 
-  for (uint8_t x = 0; x < 4; x++) {
-    for (uint8_t y = 0; y < 4; y++) {
+  for (u8 x = 0; x < 4; x++) {
+    for (u8 y = 0; y < 4; y++) {
       if (g->current.m[y][x]) {
-        uint8_t new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
-        uint8_t new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
+        u8 new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
+        u8 new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
 
         if (g->current.t == I) {
           if (clockwise) new_y--;
@@ -202,9 +202,9 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
   }
 
   vec2 kick;
-  uint8_t set_current = 0;
-  uint8_t did_kick = 0;
-  for (uint8_t i = 0; i < 5; i++) {
+  bool set_current = false;
+  bool did_kick = false;
+  for (u8 i = 0; i < 5; i++) {
     if (g->current.t == I) {
       kick = srs_wall_kicks_i[wall_kick][i];
     } else {
@@ -213,8 +213,8 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
     g->current.pos.x += kick.x;
     g->current.pos.y += kick.y;
     if (check_new_matrix(g, m) > 0) {
-      set_current = 1;
-      if (i > 0) did_kick = 1;
+      set_current = true;
+      if (i > 0) did_kick = true;
       break;
     } else {
       g->current.pos.x -= kick.x;
@@ -225,8 +225,8 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
   if (set_current) { 
     /* check for tspin */
     if (g->current.t == T) {
-      uint8_t did_tspin = 1;
-      for (uint8_t i = 0; i < 4; i++) {
+      u8 did_tspin = 1;
+      for (u8 i = 0; i < 4; i++) {
         g->current.pos.x += basic_movements[i].x;
         g->current.pos.y += basic_movements[i].y;
 
@@ -249,9 +249,9 @@ void rotate_matrix(struct cetris_game* g, int clockwise) {
   }
 }
 
-int8_t check_new_matrix(struct cetris_game* g, piece_matrix m) {
-  for (uint8_t x = 0; x < 4; x++) {
-    for (uint8_t y = 0; y < 4; y++) {
+i8 check_new_matrix(struct cetris_game* g, piece_matrix m) {
+  for (u8 x = 0; x < 4; x++) {
+    for (u8 y = 0; y < 4; y++) {
       vec2 r = (vec2){g->current.pos.x + x, g->current.pos.y + y};
       if (m[y][x]) { 
         if (r.x > CETRIS_BOARD_X - 1 || r.x < 0) 
