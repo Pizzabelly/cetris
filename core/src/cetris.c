@@ -66,36 +66,8 @@ void init_game(struct cetris_game* g) {
 
 void init_piece_queue(struct cetris_game* g) {
   for (u8 i = 0; i < 7; i++) {
-    switch (i) {
-      case 0: 
-        g->piece_queue[i].t = O;
-        g->piece_queue[i].c = COLOR_O;
-        break;
-      case 1: 
-        g->piece_queue[i].t = I; 
-        g->piece_queue[i].c = COLOR_I;
-        break;
-      case 2: 
-        g->piece_queue[i].t = S; 
-        g->piece_queue[i].c = COLOR_S;
-        break;
-      case 3: 
-        g->piece_queue[i].t = Z; 
-        g->piece_queue[i].c = COLOR_Z;
-        break;
-      case 4: 
-        g->piece_queue[i].t = L; 
-        g->piece_queue[i].c = COLOR_L;
-        break;
-      case 5: 
-        g->piece_queue[i].t = J; 
-        g->piece_queue[i].c = COLOR_J;
-        break;
-      case 6: 
-        g->piece_queue[i].t = T; 
-        g->piece_queue[i].c = COLOR_T;
-        break;
-    }
+    g->piece_queue[i].t = i;
+    g->piece_queue[i].c = i + 1;
     memcpy(g->piece_queue[i].m, default_matrices[i], sizeof(piece_matrix));
     g->piece_queue[i].r = INIT;
     g->piece_queue[i].lock_tick = 0;
