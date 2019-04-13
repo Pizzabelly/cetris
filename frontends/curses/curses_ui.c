@@ -6,7 +6,8 @@
 #include <windows.h>
 #else
 #include <ncurses.h>
-#include <pthreads.h>
+#include <unistd.h>
+#include <pthread.h>
 #endif
 #include <locale.h>
 
@@ -70,9 +71,9 @@ struct cetris_game game;
 void curses_init() {
   setlocale(LC_CTYPE, "");
   initscr();
-  noecho();
-  //keypad(stdscr, TRUE);
   curs_set(0);
+  //noecho();
+  keypad(stdscr, TRUE);
   //timeout(1000 / CETRIS_HZ);
   nodelay(stdscr, true);
 
@@ -99,7 +100,7 @@ DWORD WINAPI game_loop(void* data) {
 #else
 void *game_loop(void) {
   while(1) {
-    usleep((1/60) * 1000000);
+    usleep((1.0/60.0) * 1000000.0);
     update_game_tick(&game);
   }
   return 0;
@@ -171,10 +172,12 @@ int main(void) {
   pthread_create(&thread, NULL, game_loop, (void*)0);
 #endif
 
+  int down = 0;
   while(1) {
     int keys[50]; int key_count = 0;
     int moves[7]; memset(moves, 0, sizeof(int) * 7);
     while((keys[key_count] = getch()) != ERR) key_count++;
+    if (down) move_piece(&game, DOWN);
     for (int i = 0; i < key_count; i++) {
       switch (keys[i]) {
         case 'q': endwin(); exit(1);
@@ -185,7 +188,7 @@ int main(void) {
           move_piece(&game, RIGHT);
           moves[RIGHT] = 1; break;
         case KEY_DOWN:
-          move_piece(&game, DOWN);
+          down = 1;
           moves[DOWN] = 1; break;
         case KEY_UP:
           move_piece(&game, ROTATE_CW);
@@ -200,7 +203,8 @@ int main(void) {
           break;
       }
     }
-    for (int i = 1; i < key_count; i++) {
+    if (!moves[DOWN]) down = 0;
+    for (int i = 1; i < 8; i++) {
       if (!moves[i]) stop_holding(&game, i);
     }
     erase();
