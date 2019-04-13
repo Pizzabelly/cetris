@@ -1,2 +1,2 @@
-option('ncurses-frontend', type : 'boolean', value : false)
+option('curses-frontend', type : 'boolean', value : true)
 option('gl-frontend', type : 'boolean', value : true)

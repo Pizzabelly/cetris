@@ -96,5 +96,5 @@ void wipe_board(struct cetris_game* g);
 
 void init_game(struct cetris_game* g);
 void update_game_tick(struct cetris_game* g);
-void move_peice(struct cetris_game* g, input_t move);
+void move_piece(struct cetris_game* g, input_t move);
 void stop_holding(struct cetris_game* g, input_t move);

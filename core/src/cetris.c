@@ -232,7 +232,7 @@ void wipe_board(struct cetris_game* g) {
 
 /* MOVEMENT FUNCTIONS */
 
-void move_peice(struct cetris_game* g, input_t move) {
+void move_piece(struct cetris_game* g, input_t move) {
   if (!g->held_moves[move]) {
     switch (move) {
       case LEFT:

@@ -4,7 +4,7 @@ if get_option('debug') == true
   src += 'src/test.c'
 endif
 
-cetris_lib = shared_library('cetris', src,
+cetris_lib = static_library('cetris', src,
                 include_directories: cetris_inc,
                 install: false)
 
