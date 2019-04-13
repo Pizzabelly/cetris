@@ -111,17 +111,22 @@ void *game_loop(void) {
 void draw_board() {
   mvaddstr(0, 0, PLAY_FIELD_STR);
   for (int x = 0; x < CETRIS_BOARD_X; x++) {
-    for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
+    for (int y = 0; y < CETRIS_BOARD_Y; y++) {
+      if (game.board[x][y].ghost) {
+        attron(A_DIM);
+        mvaddstr((y) + 1, x * 2 + X_OFFSET, BLOCK);
+        attroff(A_DIM);
+      }
       if (game.board[x][y].occupied) {
-	      attron(COLOR_PAIR(game.board[x][y].c));
-        if (game.board[x][y].remove_tick > 0) {
+	      attron(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
+        if (game.board[0][y].remove_tick > 0) {
           if (game.tick % 2 == 0) {
-            mvaddstr((y - CETRIS_BOARD_VISABLE) + 1, x * 2 + X_OFFSET, BLOCK);
+            mvaddstr((y) + 1, x * 2 + X_OFFSET, BLOCK);
           }
         } else {
-          mvaddstr((y - CETRIS_BOARD_VISABLE) + 1, x * 2 + X_OFFSET, BLOCK);
+          mvaddstr((y) + 1, x * 2 + X_OFFSET, BLOCK);
         }
-	      attroff(COLOR_PAIR(game.board[x][y].c));
+	      attroff(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
       }
     }
 
@@ -152,8 +157,8 @@ void draw_board() {
     mvaddstr(4, 40 - strlen(level), level); 
 
     if (game.game_over) {
-      mvaddstr(10, 6 + X_OFFSET, "GAME OVER");
-      mvaddstr(11, 5 + X_OFFSET, "r to restart");
+      mvaddstr(10, 5 + X_OFFSET, "GAME OVER");
+      mvaddstr(11, 4 + X_OFFSET, "r to restart");
     }
 
     attroff(A_BOLD);
@@ -169,15 +174,15 @@ int main(void) {
   HANDLE thread = CreateThread(NULL, 0, game_loop, NULL, 0, NULL);
 #else
   pthread_t thread;
-  pthread_create(&thread, NULL, game_loop, (void*)0);
+  pthread_create(&thread, NULL, (void*)game_loop, (void*)0);
 #endif
 
   int down = 0;
   while(1) {
     int keys[50]; int key_count = 0;
-    int moves[7]; memset(moves, 0, sizeof(int) * 7);
+    int moves[8]; memset(moves, 0, sizeof(int) * 8);
     while((keys[key_count] = getch()) != ERR) key_count++;
-    if (down) move_piece(&game, DOWN);
+    if (down) move_piece(&game, USER_DOWN);
     for (int i = 0; i < key_count; i++) {
       switch (keys[i]) {
         case 'q': endwin(); exit(1);
@@ -189,7 +194,7 @@ int main(void) {
           moves[RIGHT] = 1; break;
         case KEY_DOWN:
           down = 1;
-          moves[DOWN] = 1; break;
+          moves[USER_DOWN] = 1; break;
         case KEY_UP:
           move_piece(&game, ROTATE_CW);
           moves[ROTATE_CW] = 1; break;
@@ -203,7 +208,7 @@ int main(void) {
           break;
       }
     }
-    if (!moves[DOWN]) down = 0;
+    if (!moves[USER_DOWN]) down = 0;
     for (int i = 1; i < 8; i++) {
       if (!moves[i]) stop_holding(&game, i);
     }

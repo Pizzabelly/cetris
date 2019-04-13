@@ -59,9 +59,9 @@ void apply_test_board(struct cetris_game* g, enum tests t) {
     default:
       return;
   }
-  for (u8 y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
+  for (u8 y = 0; y < CETRIS_BOARD_Y; y++) {
     for (u8 x = 0; x < 10; x++) {
-      if ((*board)[y - CETRIS_BOARD_VISABLE][x]) {
+      if ((*board)[y][x]) {
         g->board[x][y].occupied = 1;
         g->board[x][y].constant = 1;
         g->board[x][y].c = COLOR_I;

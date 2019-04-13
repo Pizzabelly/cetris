@@ -84,61 +84,43 @@ const piece_matrix default_matrices[7] = {
 
 /* MATRIX MODIFICATION */
 
-const vec2 basic_movements[5] = {
-  {0, 0}, {0, 1}, {0, 1}, {1, 0}, {-1, 0} // NONE, DOWN, USER_DOWN, RIGHT, LEFT
+const vec2 basic_movements[4] = {
+  {0, 0}, {0, 1}, {1, 0}, {-1, 0} // NONE, DOWN, RIGHT, LEFT
 };
 
-void move_current(struct cetris_game* g, input_t move) {
+void move_current(struct cetris_game* g, vec2 offset) {
   if (g->game_over) return;
+g->current.pos.y += offset.y; g->current.pos.x += offset.x;
 
-  g->current.pos.y += basic_movements[move].y; 
-  g->current.pos.x += basic_movements[move].x;
-
-  i8 check = check_matrix(g, &g->current.m); 
+  i8 check = check_new_matrix(g, g->current.m); 
   if (check <= 0) {
-    g->current.pos.y -= basic_movements[move].y; 
-    g->current.pos.x -= basic_movements[move].x;
+    g->current.pos.y -= offset.y;
+    g->current.pos.x -= offset.x;
 
-    if (move == USER_DOWN) g->score++;
-    if (move == DOWN && check == -1 && !g->current.lock_tick) {
-      g->current.lock_tick = g->tick + CETRIS_LOCK_DELAY;
+    if (check == -1 && g->current.lock_tick == 0) {
+      g->current.lock_tick = g->tick + 30;
     }
   }
 
   update_board(g);
 }
 
-i8 check_matrix(struct cetris_game* g, piece_matrix *m) {
+i8 overlay_matrix(struct cetris_game* g, piece_matrix m, bool set_board) {
   for (i8 y = 0; y < 4; y++) {
     for (i8 x = 0; x < 4; x++) {
       vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
-      if (r.y < 0) continue;
-      if ((*m)[y][x]) {
-        if (r.x >= CETRIS_BOARD_X || r.x < 0) return 0;
-        if (r.y >= CETRIS_BOARD_Y) return -1;
-        if (g->board[r.x][r.y].occupied && 
-            g->board[r.x][r.y].constant) return -1;
+      if (r.x > CETRIS_BOARD_X || r.x < 0 || r.y > CETRIS_BOARD_Y)
+        return 0;
+      if (m[y][x] && r.y >= 0) {
+        if (g->board[r.x][r.y].occupied) return -1;
+        if (set_board) {
+          g->board[r.x][r.y].occupied = 1;
+          g->board[r.x][r.y].c = g->current.c;
+        }
       }
     }
   }
   return 1;
-}
-
-void set_matrix(struct cetris_game *g, piece_matrix *m) {
-  for (i8 y = 0; y < 4; y++) {
-    for (i8 x = 0; x < 4; x++) {
-      vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
-      if ((*m)[y][x]) {
-        if (r.y >= 0) {
-          g->board[r.x][r.y].occupied = true;
-          g->board[r.x][r.y].c = g->current.c;
-        }
-        if (g->current.ghost_y + y >= 0) {
-          g->board[r.x][g->current.ghost_y + y].ghost = true;
-        }
-      }
-    }
-  }
 }
 
 void hard_drop(struct cetris_game* g) {
@@ -149,7 +131,8 @@ void hard_drop(struct cetris_game* g) {
   while (!drop) {
     g->current.pos.y++;
     drop_count++;
-    if (check_matrix(g, &g->current.m) <= 0) {
+    i8 check = check_new_matrix(g, g->current.m);
+    if (check <= 0) {
       g->current.pos.y--;
       drop_count--;
       drop = true;
@@ -233,7 +216,7 @@ void rotate_matrix(struct cetris_game* g, bool clockwise) {
     }
     g->current.pos.x += kick.x;
     g->current.pos.y += kick.y;
-    if (check_matrix(g, &m) > 0) {
+    if (check_new_matrix(g, m) > 0) {
       set_current = true;
       if (i > 0) did_kick = true;
       break;
@@ -244,28 +227,51 @@ void rotate_matrix(struct cetris_game* g, bool clockwise) {
   }
 
   if (set_current) { 
+    memcpy(g->current.m, m, sizeof(piece_matrix));
 
     /* check for tspin */
     if (g->current.t == T) {
-      bool did_tspin = true;
-      for (int i = 1; i < 5; i++) {
+      u8 did_tspin = 1;
+      for (int i = 0; i < 4; i++) {
         g->current.pos.x += basic_movements[i].x;
         g->current.pos.y += basic_movements[i].y;
 
-        if (check_matrix(g, &m) == 1) did_tspin = false;
+        if (overlay_current_matrix(g, false) == 1)
+          did_tspin = 0;
 
         g->current.pos.x -= basic_movements[i].x;
         g->current.pos.y -= basic_movements[i].y;
       }
 
       if (did_tspin) {
-        if (did_kick) g->mini_tspin = true;
-        else g->tspin = true;
+        if (did_kick) g->mini_tspin = 1;
+        else g->tspin = 1;
       }
     }
 
     g->current.r = next;
-    memcpy(g->current.m, m, sizeof(piece_matrix));
     update_board(g);
   }
 }
+
+
+/*
+i8 check_new_matrix(struct cetris_game* g, piece_matrix m) {
+  for (u8 x = 0; x < 4; x++) {
+    for (u8 y = 0; y < 4; y++) {
+      vec2 r = (vec2){g->current.pos.x + x, g->current.pos.y + y};
+      if (m[y][x]) { 
+        if (r.x > CETRIS_BOARD_X - 1 || r.x < 0) 
+          return 0;
+
+        if (r.y > CETRIS_BOARD_Y - 1) 
+          return -1;
+
+        if (g->board[r.x][r.y].occupied && g->board[r.x][r.y].constant) 
+          return -1;
+      }
+    }
+  }
+  return 1;
+}
+*/

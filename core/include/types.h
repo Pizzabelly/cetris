@@ -20,9 +20,10 @@ typedef u8 piece_matrix[4][4];
 
 typedef enum {
   DOWN       = 1,
-  RIGHT      = 2,
-  LEFT       = 3,
-  ROTATE_CCW = 4,
-  ROTATE_CW  = 5,
-  HARD_DROP  = 6
+  USER_DOWN  = 2,
+  RIGHT      = 3,
+  LEFT       = 4,
+  ROTATE_CCW = 5,
+  ROTATE_CW  = 6,
+  HARD_DROP  = 7 
 } input_t;

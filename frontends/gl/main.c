@@ -143,7 +143,7 @@ void update_block(struct block_drawable *b, int x, int y, int color) {
   memcpy(block, default_rect, sizeof(GLfloat) * 32);
 
   block[0] = block[8] = (x + 1.0f) / 10.0f;
-  block[1] = block[25] = (((y - CETRIS_BOARD_VISABLE) * -1.0f) + 1.0f) / 20.0f; 
+  block[1] = block[25] = (((y) * -1.0f) + 1.0f) / 20.0f; 
   block[9] = block[17] = block[1] - .05f;
   block[16] = block[24] = block[0] - .1f;
 
@@ -203,7 +203,7 @@ int main(void) {
     glUseProgram(shader_program);
     glBindVertexArray(block.vao);
     for (int x = 0; x < CETRIS_BOARD_X; x++) {
-      for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
+      for (int y = 0; y < CETRIS_BOARD_Y; y++) {
         if (cetris.board[x][y].occupied) {
           update_block(&block, x, y, cetris.board[x][y].c);  
           glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

@@ -6,14 +6,18 @@
 #include "types.h"
 
 #define CETRIS_BOARD_X 10
-#define CETRIS_BOARD_Y 43 
-#define CETRIS_BOARD_VISABLE 23 
+#define CETRIS_BOARD_Y 20
+#define CETRIS_INITIAL_X 3
+#define CETRIS_INITIAL_Y 0
+#define CETRIS_INITIAL_Y_OFFSET 2 
+//#define CETRIS_BOARD_VISABLE 21 
 
 #define CETRIS_HZ 60
 #define CETRIS_DAS_DELAY 11 
 #define CETRIS_DAS_PERIOD 3
 #define CETRIS_DROP_PERIOD 2
 #define CETRIS_LINE_CLEAR_DELAY 40
+#define CETRIS_LOCK_DELAY 40
 #define CETRIS_WAIT_ON_CLEAR 0
 
 typedef enum {
@@ -43,12 +47,14 @@ struct tetrimino {
   rstate r;
   color c;
   piece_matrix m;
+  u8 ghost_y;
   vec2 pos;
   u32 lock_tick;
 };
 
 typedef struct {
   bool occupied;
+  bool ghost;
   bool constant;
   u32 remove_tick;
   color c;
@@ -90,7 +96,7 @@ struct cetris_game {
 };
 
 void next_piece(struct cetris_game* g);
-void wipe_board(struct cetris_game* g);
+void update_board(struct cetris_game* g);
 
 /* API PROTOTYPES FUNCTIONS */
 
