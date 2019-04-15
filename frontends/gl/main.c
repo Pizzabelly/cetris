@@ -188,7 +188,7 @@ int main(void) {
   struct block_drawable block;
   create_block(&block);
 
-  struct cetris_game cetris;
+  cetris_game cetris;
   init_game(&cetris);
 
   double prev_time = glfwGetTime();

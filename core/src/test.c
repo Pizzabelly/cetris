@@ -47,7 +47,7 @@ u8 tspin_no_lines_board[20][10] = {
   { 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 }
 };
 
-void apply_test_board(struct cetris_game* g, enum tests t) {
+void apply_test_board(cetris_game* g, test t) {
   u8 (*board)[20][10];
   switch (t) {
     case TSPIN:

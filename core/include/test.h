@@ -1,8 +1,8 @@
-struct cetris_game;
+#include "cetris.h"
 
-enum tests {
+typedef enum {
   TSPIN,
   TSPIN_NO_LINES
-};
+} test;
 
-void apply_test_board(struct cetris_game* g, enum tests t);
+void apply_test_board( cetris_game* g, test t);

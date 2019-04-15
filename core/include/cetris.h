@@ -10,15 +10,17 @@
 #define CETRIS_INITIAL_X 3
 #define CETRIS_INITIAL_Y 0
 #define CETRIS_INITIAL_Y_OFFSET 2 
-//#define CETRIS_BOARD_VISABLE 21 
 
 #define CETRIS_HZ 60
 #define CETRIS_DAS_DELAY 11 
 #define CETRIS_DAS_PERIOD 3
 #define CETRIS_DROP_PERIOD 2
+#define CETRIS_NEXT_PIECE_DELAY 40
 #define CETRIS_LINE_CLEAR_DELAY 40
 #define CETRIS_LOCK_DELAY 40
 #define CETRIS_WAIT_ON_CLEAR 0
+
+#define CETRIS_STARTING_LEVEL 1
 
 typedef enum {
   O, I, S, Z, L, J, T
@@ -42,15 +44,16 @@ typedef enum {
   TWICE 
 } rstate;
 
-struct tetrimino {
+typedef struct {
   type t;
   rstate r;
   color c;
   piece_matrix m;
-  u8 ghost_y;
+  i8 ghost_y;
   vec2 pos;
   u32 lock_tick;
-};
+  bool locked;
+} tetrimino;
 
 typedef struct {
   bool occupied;
@@ -60,15 +63,15 @@ typedef struct {
   color c;
 } slot;
 
-struct cetris_game {
+typedef struct {
   /* playfield represented by a 2d array */
   slot board[CETRIS_BOARD_X][CETRIS_BOARD_Y];
 
   /* constant queue of all 7 possible tetrimino */
-  struct tetrimino piece_queue[7];
+  tetrimino piece_queue[7];
 
   /* current tetrimino */
-  struct tetrimino current;
+  tetrimino current;
   u8 current_index;
 
   /* input_manager */
@@ -81,6 +84,7 @@ struct cetris_game {
   /* internal game tick */
   u32 tick;
   u32 next_drop_tick;
+  u32 next_piece_tick;
 
   /* progress trackers */
   u32 lines;
@@ -92,15 +96,16 @@ struct cetris_game {
   bool mini_tspin;
 
   /* score counter  */
-  u64 score;
-};
+  u32 score;
+} cetris_game;
 
-void next_piece(struct cetris_game* g);
-void update_board(struct cetris_game* g);
+void next_piece(cetris_game* g);
+void update_board(cetris_game* g);
+void lock_current(cetris_game* g);
 
 /* API PROTOTYPES FUNCTIONS */
 
-void init_game(struct cetris_game* g);
-void update_game_tick(struct cetris_game* g);
-void move_piece(struct cetris_game* g, input_t move);
-void stop_holding(struct cetris_game* g, input_t move);
+void init_game(cetris_game* g);
+void update_game_tick(cetris_game* g);
+void move_piece(cetris_game* g, input_t move);
+void stop_holding(cetris_game* g, input_t move);

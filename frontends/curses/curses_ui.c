@@ -66,7 +66,7 @@
 #define X_OFFSET 8
 #define Y_OFFSET 0
 
-struct cetris_game game;
+cetris_game game;
 
 void curses_init() {
   setlocale(LC_CTYPE, "");
@@ -119,7 +119,7 @@ void draw_board() {
       }
       if (game.board[x][y].occupied) {
 	      attron(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
-        if (game.board[0][y].remove_tick > 0) {
+        if (game.board[0][y].remove_tick) {
           if (game.tick % 2 == 0) {
             mvaddstr((y) + 1, x * 2 + X_OFFSET, BLOCK);
           }
@@ -148,7 +148,7 @@ void draw_board() {
     attron(A_BOLD);
 
     char score[50];
-    sprintf(score, "%li", game.score);
+    sprintf(score, "%i", game.score);
     mvaddstr(1, (39 + X_OFFSET) - strlen(score), score);
 
     char level[20];

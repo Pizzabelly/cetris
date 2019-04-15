@@ -6,7 +6,7 @@
 #include "matrix.h"
 #include "cetris.h"
 
-bool handle_inputs(struct cetris_game* g) {
+bool handle_inputs(cetris_game* g) {
   if ((g->held_moves[RIGHT] || g->held_moves[LEFT]) && !g->das_move_tick) {
     if (g->das_repeat == 0) {
       g->das_move_tick = g->tick + CETRIS_DAS_DELAY;

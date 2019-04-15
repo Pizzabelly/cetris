@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct cetris_game;
+#include "cetris.h"
 
-bool handle_inputs(struct cetris_game* g);
-void clear_held_key(struct cetris_game* g);
+bool handle_inputs(cetris_game *g);
+void clear_held_key(cetris_game *g);

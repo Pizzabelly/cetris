@@ -88,8 +88,8 @@ const vec2 basic_movements[5] = {
   {0, 0}, {0, 1}, {0, 1}, {1, 0}, {-1, 0} // NONE, DOWN, USER_DOWN, RIGHT, LEFT
 };
 
-void move_current(struct cetris_game* g, input_t move) {
-  if (g->game_over) return;
+void move_current(cetris_game* g, input_t move) {
+  if (g->game_over || g->next_piece_tick) return;
 
   g->current.pos.y += basic_movements[move].y; 
   g->current.pos.x += basic_movements[move].x;
@@ -108,7 +108,7 @@ void move_current(struct cetris_game* g, input_t move) {
   update_board(g);
 }
 
-i8 check_matrix(struct cetris_game* g, piece_matrix *m) {
+i8 check_matrix(cetris_game* g, piece_matrix* m) {
   for (i8 y = 0; y < 4; y++) {
     for (i8 x = 0; x < 4; x++) {
       vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
@@ -124,7 +124,7 @@ i8 check_matrix(struct cetris_game* g, piece_matrix *m) {
   return 1;
 }
 
-void set_matrix(struct cetris_game *g, piece_matrix *m) {
+void set_matrix(cetris_game* g, piece_matrix* m) {
   for (i8 y = 0; y < 4; y++) {
     for (i8 x = 0; x < 4; x++) {
       vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
@@ -134,15 +134,17 @@ void set_matrix(struct cetris_game *g, piece_matrix *m) {
           g->board[r.x][r.y].c = g->current.c;
         }
         if (g->current.ghost_y + y >= 0) {
-          g->board[r.x][g->current.ghost_y + y].ghost = true;
+          if (r.y != (g->current.ghost_y + y)) { 
+            g->board[r.x][g->current.ghost_y + y].ghost = true;
+          }
         }
       }
     }
   }
 }
 
-void hard_drop(struct cetris_game* g) {
-  if (g->game_over) return;
+void hard_drop(cetris_game* g) {
+  if (g->game_over || g->next_piece_tick) return;
 
   bool drop = false;
   u8 drop_count = 0;
@@ -159,11 +161,11 @@ void hard_drop(struct cetris_game* g) {
   g->score += 2 * drop_count; // 2 score for each hard-drop'd cell
 
   update_board(g);
-  next_piece(g);
+  lock_current(g);
 }
 
-void rotate_matrix(struct cetris_game* g, bool clockwise) {
-  if (g->game_over) return;
+void rotate_matrix(cetris_game* g, bool clockwise) {
+  if (g->game_over || g->next_piece_tick) return;
   if (g->current.t == O) return;
   
   rstate next = 0; 
@@ -213,8 +215,11 @@ void rotate_matrix(struct cetris_game* g, bool clockwise) {
         u8 new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
 
         if (g->current.t == I) {
-          if (clockwise) new_y--;
-          else new_x++;
+          if (clockwise) {
+            new_y--;
+          } else {
+            new_x++;
+          }
         }
 
         m[new_y][new_x] = 1;
@@ -231,8 +236,10 @@ void rotate_matrix(struct cetris_game* g, bool clockwise) {
     } else {
       kick = srs_wall_kicks[wall_kick][i];
     }
+
     g->current.pos.x += kick.x;
     g->current.pos.y += kick.y;
+
     if (check_matrix(g, &m) > 0) {
       set_current = true;
       if (i > 0) did_kick = true;
