@@ -48,7 +48,7 @@ u8 tspin_no_lines_board[20][10] = {
 };
 
 void apply_test_board(cetris_game* g, test t) {
-  u8 (*board)[20][10];
+  u8 x, y, (*board)[20][10];
   switch (t) {
     case TSPIN:
       board = &tspin_board;
@@ -59,8 +59,8 @@ void apply_test_board(cetris_game* g, test t) {
     default:
       return;
   }
-  for (u8 y = 0; y < CETRIS_BOARD_Y; y++) {
-    for (u8 x = 0; x < 10; x++) {
+  for (y = 0; y < CETRIS_BOARD_Y; y++) {
+    for (x = 0; x < 10; x++) {
       if ((*board)[y][x]) {
         g->board[x][y].occupied = 1;
         g->board[x][y].constant = 1;

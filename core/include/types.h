@@ -27,3 +27,5 @@ typedef enum {
   ROTATE_CW  = 6,
   HARD_DROP  = 7 
 } input_t;
+
+vec2 new_vec2(i8 x, i8 y);

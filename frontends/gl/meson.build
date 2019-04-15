@@ -1,7 +1,8 @@
-src = ['main.c', 'glad/src/glad.c']
-inc = [include_directories('glad/include')]
+src = ['main.c', 'glad/src/gl.c']
 
-deps = []
+inc = [cetris_inc, include_directories('glad/include')]
+deps = [cetris]
+
 if host_machine.system() == 'windows'
   deps += compiler.find_library('glfw3', dirs: meson.current_source_dir() + '/win/glfw')
   inc += include_directories('win/glfw/include')
@@ -12,10 +13,11 @@ else
 endif
 
 configure_file(input: 'block.jpg', 
-        output: 'block.jpg',
-        copy: true, install: false)
+    output: 'block.jpg',
+    copy: true, install: false)
 
 executable('cetris_gl', src,
-        dependencies: [deps, cetris],
-        include_directories: [inc, cetris_inc],
-        install: false)
+  c_args: '-std=c99',
+  dependencies: deps,
+  include_directories: inc,
+  install: false)
