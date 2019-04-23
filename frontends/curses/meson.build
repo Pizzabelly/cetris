@@ -1,8 +1,7 @@
 src = ['curses_ui.c']
 
-deps = [cetris]
-inc = [cetris_inc]
-
+inc = []
+deps = []
 if host_machine.system() == 'windows'
   inc += include_directories('win')
   deps += compiler.find_library('pdcurses', dirs: meson.current_source_dir() + '/win')
@@ -11,7 +10,7 @@ else
   deps += dependency('threads')
 endif
 
-executable('cetris', src,
-     dependencies: deps,
-     include_directories: inc,
-     install: false)
+executable('cetris_curses', src,
+           dependencies: [deps, cetris],
+           include_directories: [inc, cetris_inc],
+           install: false)

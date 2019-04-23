@@ -1,4 +1,4 @@
-src = ['src/cetris.c', 'src/input.c', 'src/matrix.c', 'src/types.c']
+src = ['src/cetris.c', 'src/input.c', 'src/matrix.c']
 
 if get_option('debug') == true
   src += 'src/test.c'

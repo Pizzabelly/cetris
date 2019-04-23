@@ -72,7 +72,9 @@ void curses_init() {
   setlocale(LC_CTYPE, "");
   initscr();
   curs_set(0);
+  //noecho();
   keypad(stdscr, TRUE);
+  //timeout(1000 / CETRIS_HZ);
   nodelay(stdscr, true);
 
   start_color();
@@ -107,11 +109,9 @@ void *game_loop(void) {
 
 
 void draw_board() {
-  int x, y;
-
   mvaddstr(0, 0, PLAY_FIELD_STR);
-  for (x = 0; x < CETRIS_BOARD_X; x++) {
-    for (y = 0; y < CETRIS_BOARD_Y; y++) {
+  for (int x = 0; x < CETRIS_BOARD_X; x++) {
+    for (int y = 0; y < CETRIS_BOARD_Y; y++) {
       if (game.board[x][y].ghost) {
         attron(A_DIM);
         mvaddstr((y) + 1, x * 2 + X_OFFSET, BLOCK);
@@ -132,8 +132,8 @@ void draw_board() {
 
     int index = game.current_index;
 	  attron(COLOR_PAIR(game.piece_queue[index].c));
-    for (x = 0; x < 4; x++) {
-      for (y = 0; y < 4; y++) {
+    for (int x = 0; x < 4; x++) {
+      for (int y = 0; y < 4; y++) {
         if (game.piece_queue[index].m[y][x]) {
           if (game.piece_queue[index].t == I) {
             mvaddstr(6 + y, (x * 2) + 36, BLOCK);
@@ -177,14 +177,13 @@ int main(void) {
   pthread_create(&thread, NULL, (void*)game_loop, (void*)0);
 #endif
 
-  int i;
   int down = 0;
   while(1) {
     int keys[50]; int key_count = 0;
     int moves[8]; memset(moves, 0, sizeof(int) * 8);
     while((keys[key_count] = getch()) != ERR) key_count++;
     if (down) move_piece(&game, USER_DOWN);
-    for (i = 0; i < key_count; i++) {
+    for (int i = 0; i < key_count; i++) {
       switch (keys[i]) {
         case 'q': endwin(); exit(1);
         case KEY_LEFT:
@@ -210,7 +209,7 @@ int main(void) {
       }
     }
     if (!moves[USER_DOWN]) down = 0;
-    for (i = 1; i < 8; i++) {
+    for (int i = 1; i < 8; i++) {
       if (!moves[i]) stop_holding(&game, i);
     }
     erase();

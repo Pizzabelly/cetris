@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -35,11 +35,11 @@ const char *fragment_shader_source = "#version 450 core\n"
 GLuint shader_program;
 
 GLfloat default_rect[32] = {
-   /* positions       // colors          // texture coords */
-   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,   /* top right */
-   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f,   /* bottom right */
-   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,   /* bottom left */
-   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 1.0f    /* top left */
+   // positions       // colors          // texture coords
+   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,   // top right
+   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f,   // bottom right
+   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,   // bottom left
+   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 1.0f    // top left 
 };
 
 typedef struct {
@@ -49,19 +49,19 @@ typedef struct {
 } rbg_color;
 
 GLuint indices[] = {  
-  0, 1, 3, /* first triangle */
-  1, 2, 3  /* second triangle */
+  0, 1, 3, // first triangle
+  1, 2, 3  // second triangle
 };
 
 rbg_color colors[8] = {
-  {0.0f, 0.0f, 0.0f},     /* Black   */
-  {0.127f,0.219f,0.255f}, /* Aqua    */
-  {0.61f,0.153f,0.112f},  /* Olive   */
-  {0.177f,0.13f,0.201f},  /* Purple  */
-  {0.240f,0.18f,0.190f},  /* Fuchsia */
-  {0.255f,0.133f,0.27f},  /* Orange  */
-  {0.0f,0.31f,0.63f},     /* Navy    */
-  {0.255f,0.220f,0.0f}    /* Yellow  */
+  {0.0f, 0.0f, 0.0f},     // Black
+  {0.127f,0.219f,0.255f}, // Aqua
+  {0.61f,0.153f,0.112f},  // Olive
+  {0.177f,0.13f,0.201f},  // Purple
+  {0.240f,0.18f,0.190f},  // Fuchsia
+  {0.255f,0.133f,0.27f},  // Orange
+  {0.0f,0.31f,0.63f},     // Navy
+  {0.255f,0.220f,0.0f}    // Yellow 
 };
 
 struct block_drawable {
@@ -87,7 +87,8 @@ void load_texture(char *file_name, GLuint texture) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
   glGenerateMipmap(GL_TEXTURE_2D);
   stbi_image_free(data);
 }
@@ -170,7 +171,7 @@ int main(void) {
 
   glfwMakeContextCurrent(window);
 
-  if (!gladLoadGL(glfwGetProcAddress)) {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     printf("[Error] failed to load GLAD\n");
     return -1;
   }

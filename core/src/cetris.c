@@ -1,4 +1,4 @@
-//#include <time.h>
+#include <time.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -32,7 +32,7 @@ void init_game(cetris_game* g) {
   /* check for config errors */
   assert(CETRIS_NEXT_PIECE_DELAY >= CETRIS_LINE_CLEAR_DELAY);
 
-  //srand(time(NULL));
+  srand(time(NULL));
 
 #ifdef BUILD_TESTS
   apply_test_board(g, TSPIN_NO_LINES);
@@ -49,8 +49,7 @@ void init_game(cetris_game* g) {
 }
 
 void init_piece_queue(cetris_game* g) {
-  u8 i;
-  for (i = 0; i < 7; i++) {
+  for (u8 i = 0; i < 7; i++) {
     g->piece_queue[i].t = i;
     g->piece_queue[i].c = i + 1;
     memcpy(g->piece_queue[i].m, default_matrices[i], sizeof(piece_matrix));
@@ -58,13 +57,12 @@ void init_piece_queue(cetris_game* g) {
     g->piece_queue[i].lock_tick = 0;
     g->piece_queue[i].locked = false;
     g->piece_queue[i].ghost_y = 0;
-    g->piece_queue[i].pos = new_vec2(CETRIS_INITIAL_X, CETRIS_INITIAL_Y - CETRIS_INITIAL_Y_OFFSET);
+    g->piece_queue[i].pos = (vec2){CETRIS_INITIAL_X, CETRIS_INITIAL_Y - CETRIS_INITIAL_Y_OFFSET};
   }
 }
 
 void shuffle_queue(cetris_game* g) {
-  u8 i;
-  for (i = 0; i < 7; i++) {
+  for (u8 i = 0; i < 7; i++) {
     tetrimino t = g->piece_queue[i];
     u8 rand_index = rand() % 7;
     g->piece_queue[i] = g->piece_queue[rand_index];
@@ -73,7 +71,6 @@ void shuffle_queue(cetris_game* g) {
 }
 
 void update_game_tick(cetris_game* g) {
-  u8 did_move;
   if (g->game_over) return;
 
   g->tick++;
@@ -84,11 +81,11 @@ void update_game_tick(cetris_game* g) {
   
   if (g->next_piece_tick) return;
 
-  did_move = 0;
+  bool did_move = false;
   if (g->tick >= g->next_drop_tick || !g->next_drop_tick) {
     if (g->next_drop_tick) {
       move_current(g, DOWN);
-      did_move = 1;
+      did_move = true;
     }
 
     if (g->level <= 20) {
@@ -103,14 +100,14 @@ void update_game_tick(cetris_game* g) {
     g->current.pos.y++;
     if (check_matrix(g, &g->current.m) <= 0) {
       lock_current(g);
-      did_move = 1;
+      did_move = true;
     }
     g->current.pos.y--;
     g->current.lock_tick = 0;
   }
 
   if (handle_inputs(g)) {
-    did_move = 1;
+    did_move = true;
   }
   
   if (did_move) update_board(g); 
@@ -135,19 +132,18 @@ void next_piece(cetris_game* g) {
 }
 
 void lock_current(cetris_game* g) {
-  u8 x, y;
-  for (x = 0; x < CETRIS_BOARD_X; x++) { 
-    for (y = 0; y < CETRIS_BOARD_Y; y++) {
+  g->current.locked = true;
+  for (u8 x = 0; x < CETRIS_BOARD_X; x++) { 
+    for (u8 y = 0; y < CETRIS_BOARD_Y; y++) {
       if (g->board[x][y].occupied) g->board[x][y].constant = 1;
     }
   }
-  g->current.locked = true;
   update_board(g);
 }
 
 void make_ghosts(cetris_game* g) {
   u8 orig_y = g->current.pos.y;
-  while (1) {
+  while (true) {
     g->current.pos.y++;
     if (check_matrix(g, &g->current.m) <= 0) {
       g->current.ghost_y = g->current.pos.y - 1;
@@ -160,11 +156,10 @@ void make_ghosts(cetris_game* g) {
 void update_board(cetris_game* g) {
   if (g->game_over) return;
 
-  u8 x, y, s;
   u8 lines_cleared = 0;
-  for (y = 0; y < CETRIS_BOARD_Y; y++) {
+  for (u8 y = 0; y < CETRIS_BOARD_Y; y++) {
     bool clear_line = true;
-    for (x = 0; x < CETRIS_BOARD_X; x++) {
+    for (u8 x = 0; x < CETRIS_BOARD_X; x++) {
       if (!g->board[x][y].constant) { 
         memset(&g->board[x][y], 0, sizeof(slot));
       }
@@ -173,10 +168,10 @@ void update_board(cetris_game* g) {
         clear_line = false;
       }
     }
-    /* remove tick only tracked on first block of line */
+    // remove tick only tracked on first block of line
     if (g->board[0][y].remove_tick && g->board[0][y].remove_tick <= g->tick) {
-      for (s = 0; s < y; s++) {
-        for (x = 0; x < CETRIS_BOARD_X; x++) {
+      for (i8 s = y - 1; s >= 0; s--) {
+        for (u8 x = 0; x < CETRIS_BOARD_X; x++) {
           g->board[x][s + 1] = g->board[x][s];
         }
       }

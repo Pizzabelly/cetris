@@ -1,6 +1,6 @@
 project('cetris', 'c',
   version : '0.2',
-  default_options : ['warning_level=2', 'c_std=c89'])
+  default_options : ['warning_level=2', 'c_std=c99'])
 
 compiler = meson.get_compiler('c')
 

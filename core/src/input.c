@@ -29,9 +29,8 @@ bool handle_inputs(cetris_game* g) {
     }
 
     if (g->held_moves[LEFT]) {
-      if (g->prev_das_move == LEFT || g->das_repeat == 0) {
-        g->das_repeat++;
-      } else g->das_repeat = 0;
+      if (g->prev_das_move == LEFT || g->das_repeat == 0) g->das_repeat++;
+      else g->das_repeat = 0;
       move_current(g, LEFT);
       g->prev_das_move = LEFT;
     }
