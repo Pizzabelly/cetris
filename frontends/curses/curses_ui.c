@@ -22,27 +22,27 @@
 
 #ifdef ASCII_COMPATIBLE
 #define BLOCK "[]"
-#define PLAY_FIELD_STR  "       /--------------------\\   /----------------\\\n"\
-                        "       |                    |   |                |\n"\
-                        "       |                    |   \\----------------/\n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |      /---------\\   \n"\
-                        "       |                    |      |         |    \n"\
-                        "       |                    |      |         |    \n"\
-                        "       |                    |      |         |    \n"\
-                        "       |                    |      |         |    \n"\
-                        "       |                    |      \\---------/   \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
-                        "       |                    |                      \n"\
+#define PLAY_FIELD_STR  "       /--------------------\\   /----------------\\ \n"\
+                        "       |                    |   |                |   \n"\
+                        "       |                    |   \\----------------/  \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |      /---------\\      \n"\
+                        "       |                    |      |         |       \n"\
+                        "       |                    |      |         |       \n"\
+                        "       |                    |      |         |       \n"\
+                        "       |                    |      |         |       \n"\
+                        "       |                    |      \\---------/      \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
+                        "       |                    |                        \n"\
                         "       \\--------------------/"
 #else
 #define BLOCK "[]"
@@ -70,8 +70,8 @@
                         "       ┗━━━━━━━━━━━━━━━━━━━━┛                        "
 #endif
 
-#define X_OFFSET 8
-#define Y_OFFSET 0
+#define X_OFFSET 8 
+#define Y_OFFSET 1
 
 cetris_game game;
 
@@ -83,7 +83,9 @@ void curses_init() {
   keypad(stdscr, TRUE);
   nodelay(stdscr, true);
 
+#ifdef _WIN32 // only resize manually on windows
   resize_term(WIN_LINE, WIN_COL);
+#endif
 
   start_color();
   init_pair(COLOR_NONE, COLOR_BLACK, COLOR_BLACK);
@@ -120,20 +122,21 @@ void draw_board() {
   mvaddstr(0, 0, PLAY_FIELD_STR);
   for (int x = 0; x < CETRIS_BOARD_X; x++) {
     for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
-      int draw_y = y - CETRIS_BOARD_VISABLE;
+      int draw_y = y - CETRIS_BOARD_VISABLE + Y_OFFSET;
+      int draw_x = x * 2 + X_OFFSET;
       if (game.board[x][y].ghost) {
         attron(A_DIM);
-        mvaddstr(draw_y + 1, x * 2 + X_OFFSET, BLOCK);
+        mvaddstr(draw_y, draw_x, BLOCK);
         attroff(A_DIM);
       }
       if (game.board[x][y].occupied) {
 	      attron(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
         if (game.board[0][y].remove_tick) {
           if (game.tick % 2 == 0) {
-            mvaddstr(draw_y + 1, x * 2 + X_OFFSET, BLOCK);
+            mvaddstr(draw_y, draw_x, BLOCK);
           }
         } else {
-          mvaddstr(draw_y + 1, x * 2 + X_OFFSET, BLOCK);
+          mvaddstr(draw_y, draw_x, BLOCK);
         }
 	      attroff(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
       }
