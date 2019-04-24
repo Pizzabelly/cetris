@@ -1,12 +1,12 @@
 #include <stdio.h>
 
-#include <glad/glad.h>
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#include <cetris.h>
+#include "cetris.h"
 
 const char *vertex_shader_source = "#version 450 core\n"
     "layout (location = 0) in vec3 aPos;\n"
@@ -171,7 +171,7 @@ int main(void) {
 
   glfwMakeContextCurrent(window);
 
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+  if (!gladLoadGL(glfwGetProcAddress)) {
     printf("[Error] failed to load GLAD\n");
     return -1;
   }

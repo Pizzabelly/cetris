@@ -255,7 +255,7 @@ void rotate_matrix(cetris_game* g, bool clockwise) {
     /* check for tspin */
     if (g->current.t == T) {
       bool did_tspin = true;
-      for (int i = 1; i < 5; i++) {
+      for (u8 i = 1; i < 5; i++) {
         g->current.pos.x += basic_movements[i].x;
         g->current.pos.y += basic_movements[i].y;
 

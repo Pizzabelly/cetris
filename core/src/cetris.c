@@ -21,8 +21,10 @@ static void add_score(cetris_game* g, u8 lines);
 
 /* LEVEL DROP SPEED VALUES */
 
+// https://tetris.fandom.com/wiki/Tetris_Worlds
+// TODO: Make this more accurate
 static const u32 level_drop_delay[20] = {
-  48, 43, 38, 33, 28, 23, 18, 13, 8, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3 
+  60, 48, 37, 28, 21, 16, 11, 8, 6, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1 
 };
   
 /* GAME FUNCTIONS */
@@ -57,7 +59,12 @@ void init_piece_queue(cetris_game* g) {
     g->piece_queue[i].lock_tick = 0;
     g->piece_queue[i].locked = false;
     g->piece_queue[i].ghost_y = 0;
-    g->piece_queue[i].pos = (vec2){CETRIS_INITIAL_X, CETRIS_INITIAL_Y - CETRIS_INITIAL_Y_OFFSET};
+
+    /* Pieces should spawn so that on the first down 
+     * tick the bottom row will show. Values here are adjusted 
+     * for the default 4x4 matricies for each piece */
+    g->piece_queue[i].pos.x = 3;
+    g->piece_queue[i].pos.y = (i == I) ? 17 : 16;
   }
 }
 
@@ -122,6 +129,10 @@ void next_piece(cetris_game* g) {
     g->game_over = true;
   }
   g->current_index++;
+
+  if (!g->game_over) {
+    move_current(g, DOWN);
+  }
 
   if (g->current_index >= 7) {
     g->current_index = 0;
@@ -234,7 +245,7 @@ void add_score(cetris_game* g, u8 lines) {
 
 /* MOVEMENT FUNCTIONS */
 
-void move_piece(cetris_game* g, input_t move) {
+void move_piece(cetris_game* g, input_t move, bool hold) {
   if (!g->held_moves[move]) {
     switch (move) {
       case LEFT:
@@ -254,7 +265,7 @@ void move_piece(cetris_game* g, input_t move) {
         break;
     }
   }
-  g->held_moves[move] = true;
+  if (hold) g->held_moves[move] = true;
 }
 
 void stop_holding(cetris_game* g, input_t move) {
@@ -264,3 +275,26 @@ void stop_holding(cetris_game* g, input_t move) {
     g->das_repeat = 0;
   } else if (move == USER_DOWN) g->down_move_tick = 0;
 }
+
+void reset_tetrimino(tetrimino* t) {
+  t->r = INIT;
+  t->pos.x = 3;
+  t->pos.y = (t->t == I) ? 17 : 16;
+  t->ghost_y = 0;
+}
+
+void hold_piece(cetris_game* g) {
+  if (g->piece_held) {
+    tetrimino tmp = g->current;
+    g->current = g->held;
+    g->held = tmp;
+  } else {
+    g->held = g->current;
+    reset_tetrimino(&g->held);
+    g->piece_held = true;
+    next_piece(g);
+  }
+  update_board(g);
+}
+    
+

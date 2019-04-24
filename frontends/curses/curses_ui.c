@@ -1,7 +1,11 @@
+/* very simple curses interface, DAS is not functional because you cant detect 
+ * key up presses on the terminal, there are 2 character sets, ASCII_COMPATIBLE
+ * for no UTF-8 chars and the normal which will look better on a platform that can
+ * support UTF-8. Color support is limited because I havent figured out colors yet */
+
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-#define ASCII_COMPATIBLE
 #include "win\curses.h"
 #include <windows.h>
 #else
@@ -12,6 +16,9 @@
 #include <locale.h>
 
 #include "cetris.h"
+
+#define WIN_COL 55 
+#define WIN_LINE 25 
 
 #ifdef ASCII_COMPATIBLE
 #define BLOCK "[]"
@@ -72,20 +79,21 @@ void curses_init() {
   setlocale(LC_CTYPE, "");
   initscr();
   curs_set(0);
-  //noecho();
+  noecho();
   keypad(stdscr, TRUE);
-  //timeout(1000 / CETRIS_HZ);
   nodelay(stdscr, true);
+
+  resize_term(WIN_LINE, WIN_COL);
 
   start_color();
   init_pair(COLOR_NONE, COLOR_BLACK, COLOR_BLACK);
-  init_pair(COLOR_O, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(COLOR_O, COLOR_YELLOW, COLOR_BLACK);
   init_pair(COLOR_Z, COLOR_RED, COLOR_BLACK);
-  init_pair(COLOR_S, COLOR_CYAN, COLOR_BLACK);
-  init_pair(COLOR_T, COLOR_WHITE, COLOR_BLACK);
-  init_pair(COLOR_L, COLOR_GREEN, COLOR_BLACK);
-  init_pair(COLOR_I, COLOR_BLUE, COLOR_BLACK);
-  init_pair(COLOR_J, COLOR_YELLOW, COLOR_BLACK);
+  init_pair(COLOR_S, COLOR_GREEN, COLOR_BLACK);
+  init_pair(COLOR_T, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(COLOR_L, COLOR_WHITE, COLOR_BLACK); // should be orange
+  init_pair(COLOR_I, COLOR_CYAN, COLOR_BLACK);
+  init_pair(COLOR_J, COLOR_BLUE, COLOR_BLACK);
   clear();
 }
 
@@ -111,20 +119,21 @@ void *game_loop(void) {
 void draw_board() {
   mvaddstr(0, 0, PLAY_FIELD_STR);
   for (int x = 0; x < CETRIS_BOARD_X; x++) {
-    for (int y = 0; y < CETRIS_BOARD_Y; y++) {
+    for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
+      int draw_y = y - CETRIS_BOARD_VISABLE;
       if (game.board[x][y].ghost) {
         attron(A_DIM);
-        mvaddstr((y) + 1, x * 2 + X_OFFSET, BLOCK);
+        mvaddstr(draw_y + 1, x * 2 + X_OFFSET, BLOCK);
         attroff(A_DIM);
       }
       if (game.board[x][y].occupied) {
 	      attron(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
         if (game.board[0][y].remove_tick) {
           if (game.tick % 2 == 0) {
-            mvaddstr((y) + 1, x * 2 + X_OFFSET, BLOCK);
+            mvaddstr(draw_y + 1, x * 2 + X_OFFSET, BLOCK);
           }
         } else {
-          mvaddstr((y) + 1, x * 2 + X_OFFSET, BLOCK);
+          mvaddstr(draw_y + 1, x * 2 + X_OFFSET, BLOCK);
         }
 	      attroff(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
       }
@@ -177,40 +186,35 @@ int main(void) {
   pthread_create(&thread, NULL, (void*)game_loop, (void*)0);
 #endif
 
-  int down = 0;
   while(1) {
-    int keys[50]; int key_count = 0;
-    int moves[8]; memset(moves, 0, sizeof(int) * 8);
+    int keys[25]; int key_count = 0;
     while((keys[key_count] = getch()) != ERR) key_count++;
-    if (down) move_piece(&game, USER_DOWN);
     for (int i = 0; i < key_count; i++) {
       switch (keys[i]) {
         case 'q': endwin(); exit(1);
         case KEY_LEFT:
-          move_piece(&game, LEFT); 
-          moves[LEFT] = 1; break;
+          move_piece(&game, LEFT, false); break;
         case KEY_RIGHT:
-          move_piece(&game, RIGHT);
-          moves[RIGHT] = 1; break;
+          move_piece(&game, RIGHT, false); break;
         case KEY_DOWN:
-          down = 1;
-          moves[USER_DOWN] = 1; break;
+          move_piece(&game, DOWN, false); break;
         case KEY_UP:
-          move_piece(&game, ROTATE_CW);
-          moves[ROTATE_CW] = 1; break;
+        case 'x':
+          move_piece(&game, ROTATE_CW, false); break;
+        case '^':
+        case 'z':
+          move_piece(&game, ROTATE_CCW, false); break;
         case ' ':
-          move_piece(&game, HARD_DROP);
-          moves[HARD_DROP] = 1; break;
+          move_piece(&game, HARD_DROP, false); break;
+        case KEY_SLEFT:
+        case 'c':
+          hold_piece(&game); break;
         case 'r':
           if (game.game_over) {
             init_game(&game);
           }
           break;
       }
-    }
-    if (!moves[USER_DOWN]) down = 0;
-    for (int i = 1; i < 8; i++) {
-      if (!moves[i]) stop_holding(&game, i);
     }
     erase();
     draw_board();

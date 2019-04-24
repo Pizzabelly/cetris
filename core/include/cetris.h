@@ -6,10 +6,8 @@
 #include "types.h"
 
 #define CETRIS_BOARD_X 10
-#define CETRIS_BOARD_Y 20
-#define CETRIS_INITIAL_X 3
-#define CETRIS_INITIAL_Y 0
-#define CETRIS_INITIAL_Y_OFFSET 2 
+#define CETRIS_BOARD_Y 40 
+#define CETRIS_BOARD_VISABLE 20 
 
 #define CETRIS_HZ 60
 #define CETRIS_DAS_DELAY 11 
@@ -17,7 +15,7 @@
 #define CETRIS_DROP_PERIOD 2
 #define CETRIS_NEXT_PIECE_DELAY 40
 #define CETRIS_LINE_CLEAR_DELAY 40
-#define CETRIS_LOCK_DELAY 40
+#define CETRIS_LOCK_DELAY 30 
 #define CETRIS_WAIT_ON_CLEAR 0
 
 #define CETRIS_STARTING_LEVEL 1
@@ -28,13 +26,13 @@ typedef enum {
 
 typedef enum {
   COLOR_NONE,
-  COLOR_O,
-  COLOR_I,
-  COLOR_S,
-  COLOR_Z,
-  COLOR_L,
-  COLOR_J,
-  COLOR_T
+  COLOR_O, // yellow
+  COLOR_I, // cyan
+  COLOR_S, // green
+  COLOR_Z, // red
+  COLOR_L, // orange
+  COLOR_J, // blue
+  COLOR_T // purple
 } color;
 
 typedef enum {
@@ -72,6 +70,8 @@ typedef struct {
 
   /* current tetrimino */
   tetrimino current;
+  tetrimino held;
+  bool piece_held;
   u8 current_index;
 
   /* input_manager */
@@ -107,5 +107,6 @@ void lock_current(cetris_game* g);
 
 void init_game(cetris_game* g);
 void update_game_tick(cetris_game* g);
-void move_piece(cetris_game* g, input_t move);
+void move_piece(cetris_game* g, input_t move, bool hold);
+void hold_piece(cetris_game* g);
 void stop_holding(cetris_game* g, input_t move);

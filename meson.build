@@ -4,8 +4,6 @@ project('cetris', 'c',
 
 compiler = meson.get_compiler('c')
 
-cetris_inc = include_directories('core/include')
-
 if get_option('debug') == true 
   if host_machine.system() == 'windows'
     add_global_arguments('/DBUILD_TESTS', language : 'c') 
@@ -14,6 +12,7 @@ if get_option('debug') == true
   endif
 endif
 
+cetris_inc = include_directories('core/include')
 subdir('core')
 
 if get_option('curses-frontend') == true
