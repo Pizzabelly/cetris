@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #ifdef _WIN32
 #include "win\curses.h"
 #include <windows.h>
@@ -74,6 +75,7 @@
 #define Y_OFFSET 1
 
 cetris_game game;
+bool is_paused = false;
 
 void curses_init() {
   setlocale(LC_CTYPE, "");
@@ -103,7 +105,7 @@ void curses_init() {
 DWORD WINAPI game_loop(void* data) {
   while(1) {
     Sleep((1.0/60.0) * 1000.0);
-    update_game_tick(&game);
+    if (!is_paused) update_game_tick(&game);
   }
   return 0;
 }
@@ -111,7 +113,7 @@ DWORD WINAPI game_loop(void* data) {
 void *game_loop(void) {
   while(1) {
     usleep((1.0/60.0) * 1000000.0);
-    update_game_tick(&game);
+    if (!is_paused) update_game_tick(&game);
   }
   return 0;
 }
@@ -173,6 +175,10 @@ void draw_board() {
       mvaddstr(11, 4 + X_OFFSET, "r to restart");
     }
 
+    if (is_paused) {
+      mvaddstr(10, 7 + X_OFFSET, "paused");
+    }
+
     attroff(A_BOLD);
   }
 }
@@ -195,6 +201,16 @@ int main(void) {
     for (int i = 0; i < key_count; i++) {
       switch (keys[i]) {
         case 'q': endwin(); exit(1);
+        case 27: // esc or alt
+          is_paused = !is_paused; break;
+        case 'r':
+          if (game.game_over) {
+            init_game(&game);
+          }
+          break;
+      }
+      if (is_paused) continue; // dont allow input if paused
+      switch (keys[i]) {
         case KEY_LEFT:
           move_piece(&game, LEFT, false); break;
         case KEY_RIGHT:
@@ -212,11 +228,6 @@ int main(void) {
         case KEY_SLEFT:
         case 'c':
           hold_piece(&game); break;
-        case 'r':
-          if (game.game_over) {
-            init_game(&game);
-          }
-          break;
       }
     }
     erase();
