@@ -149,7 +149,7 @@ void draw_board() {
     for (int x = 0; x < 4; x++) {
       for (int y = 0; y < 4; y++) {
         if (game.piece_queue[index].m[y][x]) {
-          if (game.piece_queue[index].t == I) {
+          if (game.piece_queue[index].t == I || game.piece_queue[index].t == O) {
             mvaddstr(6 + y, (x * 2) + 36, BLOCK);
           } else {
             mvaddstr(6 + y, (x * 2) + 37, BLOCK);
