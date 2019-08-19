@@ -20,6 +20,8 @@
 
 #define CETRIS_STARTING_LEVEL 1
 
+typedef u8 piece_matrix[4][4];
+
 typedef enum {
   O, I, S, Z, L, J, T
 } type;
@@ -74,17 +76,11 @@ typedef struct {
   bool piece_held;
   u8 current_index;
 
-  /* input_manager */
-  bool held_moves[7];
-  input_t prev_das_move;
-  u8 das_repeat;
-  u32 das_move_tick;
-  u32 down_move_tick;
-
   /* internal game tick */
   u32 tick;
   u32 next_drop_tick;
   u32 next_piece_tick;
+  u32 down_move_tick;
 
   /* progress trackers */
   u32 lines;
@@ -99,14 +95,18 @@ typedef struct {
   u32 score;
 } cetris_game;
 
-void next_piece(cetris_game* g);
-void update_board(cetris_game* g);
-void lock_current(cetris_game* g);
+typedef enum {
+  DOWN       = 1,
+  USER_DOWN  = 2,
+  RIGHT      = 3,
+  LEFT       = 4,
+  ROTATE_CCW = 5,
+  ROTATE_CW  = 6,
+  HARD_DROP  = 7 
+} input_t;
 
-/* API PROTOTYPES FUNCTIONS */
-
+/* API FUNCTIONS */
 void init_game(cetris_game* g);
 void update_game_tick(cetris_game* g);
-void move_piece(cetris_game* g, input_t move, bool hold);
+void move_piece(cetris_game* g, input_t move);
 void hold_piece(cetris_game* g);
-void stop_holding(cetris_game* g, input_t move);

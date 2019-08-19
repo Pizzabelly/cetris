@@ -8,6 +8,7 @@ if host_machine.system() == 'windows'
   deps += compiler.find_library('pdcurses', dirs: meson.current_source_dir() + '/win')
 else
   deps += dependency('ncursesw')
+  deps += dependency('tinfow')
   deps += dependency('threads')
 endif
 

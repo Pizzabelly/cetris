@@ -47,12 +47,12 @@
                         "       \\--------------------/"
 #else
 #define BLOCK "[]"
-#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━━━━━━━━━━┓  ┏━━━━━━━━━━━━━━━┓  \n"\
+#define PLAY_FIELD_STR  "       ┏━━━━━━━━━━━━━━━━━━━━┓  ┏━━━━━score━━━━━┓  \n"\
                         "       ┃                    ┃  ┃               ┃  \n"\
                         "       ┃                    ┃  ┗━━━━━━━━━━━━━━━┛  \n"\
                         "       ┃                    ┃                     \n"\
                         "       ┃                    ┃                     \n"\
-                        "       ┃                    ┃    ┏━━━━━━━━━━━┓    \n"\
+                        "       ┃                    ┃    ┏━━━queue━━━┓    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
                         "       ┃                    ┃    ┃           ┃    \n"\
@@ -212,19 +212,19 @@ int main(void) {
       if (is_paused) continue; // dont allow input if paused
       switch (keys[i]) {
         case KEY_LEFT:
-          move_piece(&game, LEFT, false); break;
+          move_piece(&game, LEFT); break;
         case KEY_RIGHT:
-          move_piece(&game, RIGHT, false); break;
+          move_piece(&game, RIGHT); break;
         case KEY_DOWN:
-          move_piece(&game, DOWN, false); break;
+          move_piece(&game, USER_DOWN); break;
         case KEY_UP:
         case 'x':
-          move_piece(&game, ROTATE_CW, false); break;
+          move_piece(&game, ROTATE_CW); break;
         case '^':
         case 'z':
-          move_piece(&game, ROTATE_CCW, false); break;
+          move_piece(&game, ROTATE_CCW); break;
         case ' ':
-          move_piece(&game, HARD_DROP, false); break;
+          move_piece(&game, HARD_DROP); break;
         case KEY_SLEFT:
         case 'c':
           hold_piece(&game); break;

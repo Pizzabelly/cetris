@@ -1,7 +1,7 @@
-src = ['src/cetris.c', 'src/input.c', 'src/matrix.c']
+src = ['cetris.c']
 
 if get_option('debug') == true
-  src += 'src/test.c'
+  src += 'test.c'
 endif
 
 cetris_lib = static_library('cetris', src,

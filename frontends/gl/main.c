@@ -64,12 +64,12 @@ rbg_color colors[8] = {
   {0.255f,0.220f,0.0f}    // Yellow 
 };
 
-struct block_drawable {
+typedef struct {
   GLuint vao;
   GLuint vbo;
   GLuint ebo;
   GLuint texture;
-};
+} drawable;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, width, height);
@@ -113,7 +113,7 @@ void load_fragment_shader(GLuint program) {
   glDeleteShader(fragment_shader);
 }
 
-void create_block(struct block_drawable *b) {
+void create_static_2d(drawable *b, int w, int h, char* texture_file) {
   glGenVertexArrays(1, &b->vao);
   glGenBuffers(1, &b->vbo);
   glGenBuffers(1, &b->ebo);
@@ -124,6 +124,9 @@ void create_block(struct block_drawable *b) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
 
   glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
+
+  GLfloat rect[32];
+  memcpy(&rect, &default_rect, sizeof(GLfloat) * 32);
   glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), default_rect, GL_DYNAMIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
@@ -135,10 +138,18 @@ void create_block(struct block_drawable *b) {
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
   glEnableVertexAttribArray(2);
 
-  load_texture("block.jpg", b->texture);
+  load_texture(texture_file, b->texture);
 }
 
-void update_block(struct block_drawable *b, int x, int y, int color) {
+void calc_size(GLfloat *rect, int x, int y) {
+  rect[0] = rect[8] = (x + 1.0f) / 10.0f;
+  rect[1] = rect[25] = (((y) * -1.0f) + 1.0f) / 20.0f; 
+  rect[9] = rect[17] = rect[1] - .05f;
+  rect[16] = rect[24] = rect[0] - .1f;
+}
+
+
+void update_block(drawable *b, int x, int y, int color) {
   GLfloat block[32];
   memcpy(block, default_rect, sizeof(GLfloat) * 32);
 
@@ -185,8 +196,12 @@ int main(void) {
   load_vertex_shader(shader_program);
   glLinkProgram(shader_program);
 
-  struct block_drawable block;
-  create_block(&block);
+  drawable block;
+  create_static_2d(&block, 124, 124, "block.jpg");
+
+  drawable play_field;
+  
+  
 
   cetris_game cetris;
   init_game(&cetris);
