@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -7,6 +8,8 @@
 #include "stb_image.h"
 
 #include "cetris.h"
+
+static cetris_game cetris;
 
 const char *vertex_shader_source = "#version 450 core\n"
     "layout (location = 0) in vec3 aPos;\n"
@@ -75,9 +78,24 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, width, height);
 }  
 
-void process_input(GLFWwindow *window) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+void input_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, 1);
+
+  if (key == GLFW_KEY_D && action == GLFW_PRESS)
+    move_piece(&cetris, RIGHT);
+
+  if (key == GLFW_KEY_S && action == GLFW_PRESS)
+    move_piece(&cetris, USER_DOWN);
+
+  if (key == GLFW_KEY_A && action == GLFW_PRESS)
+    move_piece(&cetris, LEFT);
+
+  if (key == GLFW_KEY_W && action == GLFW_PRESS)
+    move_piece(&cetris, ROTATE_CW);
+
+  if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    move_piece(&cetris, HARD_DROP);
 }
 
 void load_texture(char *file_name, GLuint texture) {
@@ -153,6 +171,9 @@ void update_block(drawable *b, int x, int y, int color) {
   GLfloat block[32];
   memcpy(block, default_rect, sizeof(GLfloat) * 32);
 
+  x = x - 6;
+  y = y - 20;
+
   block[0] = block[8] = (x + 1.0f) / 10.0f;
   block[1] = block[25] = (((y) * -1.0f) + 1.0f) / 20.0f; 
   block[9] = block[17] = block[1] - .05f;
@@ -203,13 +224,14 @@ int main(void) {
   
   
 
-  cetris_game cetris;
   init_game(&cetris);
 
   double prev_time = glfwGetTime();
 
+  glfwSetKeyCallback(window, input_callback);
+
   while(!glfwWindowShouldClose(window)) {
-    process_input(window);
+    //process_input(window);
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);

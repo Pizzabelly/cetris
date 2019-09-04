@@ -5,6 +5,8 @@
 #include <stdbool.h>
 
 #include "cetris.h"
+#include "types.h"
+#include "matrix.h"
 
 #ifdef BUILD_TESTS
 #include "test.h"
@@ -17,15 +19,10 @@ static void update_board(cetris_game* g);
 static void lock_current(cetris_game* g);
 static void move_current(cetris_game* g, input_t move);
 static void hard_drop(cetris_game* g);
-static void rotate_matrix(cetris_game* g, bool clockwise);
-static void set_matrix(cetris_game* g, piece_matrix* m);
-static i8 check_matrix(cetris_game* g, piece_matrix* m);
+static void rotate_piece(cetris_game* g, bool clockwise);
 static void init_piece_queue(cetris_game* g);
 static void shuffle_queue(cetris_game* g);
-static void next_piece(cetris_game* g);
-static void lock_current(cetris_game* g);
 static void make_ghosts(cetris_game* g);
-static void update_board(cetris_game* g);
 static void add_score(cetris_game* g, u8 lines);
 static void reset_tetrimino(tetrimino* t);
 
@@ -52,59 +49,6 @@ static const vec2 srs_wall_kicks_i[8][5] = {
   { {0, 0}, {-2, 0}, {1, 0},  {-2,-1}, {1,2}   }, // L->2
   { {0, 0}, {1, 0},  {-2, 0}, {1,-2},  {-2,1}  }, // L->0
   { {0, 0}, {-1, 0}, {2, 0},  {-1,2},  {2,-1}  }  // 0->L
-};
-
-/* DEFAULT MATRIX FOR EACH POSSIBLE TETRIMINO */
-
-static const piece_matrix default_matrices[7] = {
-  { 
-    { 0, 0, 0, 0 },
-    { 0, 1, 1, 0 }, 
-    { 0, 1, 1, 0 },
-    { 0, 0, 0, 0 }
-  }, 
-
-  { 
-    { 0, 0, 0, 0 },
-    { 1, 1, 1, 1 },
-    { 0, 0, 0, 0 },
-    { 0, 0, 0, 0 }
-  },
-
-  { 
-    { 0, 0, 0, 0 },
-    { 0, 1, 1, 0 },
-    { 1, 1, 0, 0 },
-    { 0, 0, 0, 0 }
-  },
-
-  { 
-    { 0, 0, 0, 0 },
-    { 1, 1, 0, 0 },
-    { 0, 1, 1, 0 },
-    { 0, 0, 0, 0 }
-  },
-  
-  { 
-    { 0, 0, 0, 0 },
-    { 0, 0, 1, 0 },
-    { 1, 1, 1, 0 },
-    { 0, 0, 0, 0 }
-  },
-
-  { 
-    { 0, 0, 0, 0 },
-    { 1, 0, 0, 0 },
-    { 1, 1, 1, 0 },
-    { 0, 0, 0, 0 }
-  },
-
-  { 
-    { 0, 0, 0, 0 },
-    { 0, 1, 0, 0 },
-    { 1, 1, 1, 0 },
-    { 0, 0, 0, 0 }
-  }
 };
 
 static const vec2 basic_movements[5] = {
@@ -267,7 +211,7 @@ void update_board(cetris_game* g) {
     }
     // remove tick only tracked on first block of line
     if (g->board[0][y].remove_tick && g->board[0][y].remove_tick <= g->tick) {
-      for (i8 s = y - 1; s >= 0; s--) {
+      for (s8 s = y - 1; s >= 0; s--) {
         for (u8 x = 0; x < CETRIS_BOARD_X; x++) {
           g->board[x][s + 1] = g->board[x][s];
         }
@@ -343,10 +287,10 @@ void move_piece(cetris_game* g, input_t move) {
       hard_drop(g);
       break;
     case ROTATE_CW:
-      rotate_matrix(g, 1);
+      rotate_piece(g, 1);
       break;
     case ROTATE_CCW:
-      rotate_matrix(g, 0);
+      rotate_piece(g, 0);
       break;
   }
 }
@@ -378,65 +322,34 @@ void move_current(cetris_game* g, input_t move) {
   g->current.pos.y += basic_movements[move].y; 
   g->current.pos.x += basic_movements[move].x;
 
-  i8 check = check_matrix(g, &g->current.m); 
+  s8 check = check_matrix(g, &g->current.m); 
   if (check <= 0) {
     g->current.pos.y -= basic_movements[move].y; 
     g->current.pos.x -= basic_movements[move].x;
 
-    if (move == USER_DOWN) g->score++;
     if (move == DOWN && check == -1 && !g->current.lock_tick) {
       g->current.lock_tick = g->tick + CETRIS_LOCK_DELAY;
     }
+  } else {
+    if (move == USER_DOWN) g->score++;
+    if ((move == DOWN) | (move == USER_DOWN))
+      g->current.lock_tick = 0;
   }
 
   update_board(g);
 }
 
-i8 check_matrix(cetris_game* g, piece_matrix* m) {
-  for (i8 y = 0; y < 4; y++) {
-    for (i8 x = 0; x < 4; x++) {
-      vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
-      if (r.y < 0) continue;
-      if ((*m)[y][x]) {
-        if (r.x >= CETRIS_BOARD_X || r.x < 0) return 0;
-        if (r.y >= CETRIS_BOARD_Y) return -1;
-        if (g->board[r.x][r.y].occupied && 
-            g->board[r.x][r.y].constant) return -1;
-      }
-    }
-  }
-  return 1;
-}
-
-void set_matrix(cetris_game* g, piece_matrix* m) {
-  for (i8 y = 0; y < 4; y++) {
-    for (i8 x = 0; x < 4; x++) {
-      vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
-      if ((*m)[y][x]) {
-        if (r.y >= 0) {
-          g->board[r.x][r.y].occupied = true;
-          g->board[r.x][r.y].c = g->current.c;
-        }
-        if (g->current.ghost_y + y >= 0)
-          if (r.y != (g->current.ghost_y + y))
-            g->board[r.x][g->current.ghost_y + y].ghost = true;
-      }
-    }
-  }
-}
-
 void hard_drop(cetris_game* g) {
   if (g->game_over || g->next_piece_tick) return;
 
-  bool drop = false;
   u8 drop_count = 0;
-  while (!drop) {
+  while (true) {
     g->current.pos.y++;
     drop_count++;
     if (check_matrix(g, &g->current.m) <= 0) {
       g->current.pos.y--;
       drop_count--;
-      drop = true;
+      break;
     }
   }
   
@@ -446,7 +359,7 @@ void hard_drop(cetris_game* g) {
   lock_current(g);
 }
 
-void rotate_matrix(cetris_game* g, bool clockwise) {
+void rotate_piece(cetris_game* g, bool clockwise) {
   if (g->game_over || g->next_piece_tick) return;
   if (g->current.t == O) return;
   
@@ -490,24 +403,7 @@ void rotate_matrix(cetris_game* g, bool clockwise) {
   piece_matrix m;
   memset(m, 0, sizeof(piece_matrix));
 
-  for (u8 x = 0; x < 4; x++) {
-    for (u8 y = 0; y < 4; y++) {
-      if (g->current.m[y][x]) {
-        u8 new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
-        u8 new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
-
-        if (g->current.t == I) {
-          if (clockwise) {
-            new_y--;
-          } else {
-            new_x++;
-          }
-        }
-
-        m[new_y][new_x] = 1;
-      }
-    }
-  }
+  rotate_matrix(g, &m, clockwise);
 
   vec2 kick;
   bool set_current = false;

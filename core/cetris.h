@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
 
 #include "types.h"
@@ -18,9 +17,7 @@
 #define CETRIS_LOCK_DELAY 30 
 #define CETRIS_WAIT_ON_CLEAR 0
 
-#define CETRIS_STARTING_LEVEL 1
-
-typedef u8 piece_matrix[4][4];
+#define CETRIS_STARTING_LEVEL 11
 
 typedef enum {
   O, I, S, Z, L, J, T
@@ -49,7 +46,7 @@ typedef struct {
   rstate r;
   color c;
   piece_matrix m;
-  i8 ghost_y;
+  s8 ghost_y;
   vec2 pos;
   u32 lock_tick;
   bool locked;
