@@ -1,7 +1,7 @@
 src = ['curses_ui.c']
 
 inc = [cetris_inc]
-deps = [cetris]
+deps = []
 
 if host_machine.system() == 'windows'
   inc += include_directories('win')

@@ -12,8 +12,7 @@ if get_option('debug') == true
   endif
 endif
 
-cetris_inc = include_directories('core')
-subdir('core')
+cetris_inc = include_directories('lib')
 
 if get_option('curses-frontend') == true
   subdir('frontends/curses')

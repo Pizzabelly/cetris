@@ -1,5 +1,9 @@
-#include "test.h"
 #include "cetris.h"
+
+typedef enum {
+  TSPIN,
+  TSPIN_NO_LINES
+} test;
 
 u8 tspin_board[20][10] = {
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -69,4 +73,3 @@ void apply_test_board(cetris_game* g, test t) {
     }
   }
 }
-

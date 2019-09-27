@@ -1,7 +1,7 @@
 src = ['main.c', 'glad/src/gl.c']
 
 inc = [cetris_inc, include_directories('glad/include')]
-deps = [cetris]
+deps = []
 
 if host_machine.system() == 'windows'
   deps += compiler.find_library('glfw3', dirs: meson.current_source_dir() + '/win/glfw')
