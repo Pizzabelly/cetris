@@ -1,3 +1,6 @@
+#ifndef CETRIS_H
+#define CETRIS_H
+
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -681,3 +684,5 @@ void rotate_matrix(cetris_game *g, piece_matrix *m, bool clockwise) {
     }
   }
 }
+
+#endif /* CETRIS_H */
