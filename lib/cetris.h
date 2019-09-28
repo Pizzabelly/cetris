@@ -12,12 +12,6 @@
 #include "test.h"
 #endif
 
-#define u8 uint8_t
-#define u32 uint32_t
-#define u64 uint64_t
-#define s8 int8_t
-#define s32 int32_t
-
 #define CETRIS_EXPORT
 
 #define CETRIS_BOARD_X 10
@@ -25,8 +19,6 @@
 #define CETRIS_BOARD_VISABLE 20
 
 #define CETRIS_HZ 60
-#define CETRIS_DAS_DELAY 11
-#define CETRIS_DAS_PERIOD 3
 #define CETRIS_DROP_PERIOD 2
 #define CETRIS_NEXT_PIECE_DELAY 40
 #define CETRIS_LINE_CLEAR_DELAY 40
@@ -36,11 +28,11 @@
 #define CETRIS_STARTING_LEVEL 1
 
 typedef struct {
-  s8 x;
-  s8 y;
+  int x;
+  int y;
 } vec2;
 
-typedef u8 piece_matrix[4][4];
+typedef int piece_matrix[4][4];
 
 typedef enum { O, I, S, Z, L, J, T } type;
 
@@ -62,9 +54,9 @@ typedef struct {
   rstate r;
   color c;
   piece_matrix m;
-  s8 ghost_y;
+  int ghost_y;
   vec2 pos;
-  u32 lock_tick;
+  int lock_tick;
   bool locked;
 } tetrimino;
 
@@ -72,7 +64,7 @@ typedef struct {
   bool occupied;
   bool ghost;
   bool constant;
-  u32 remove_tick;
+  int remove_tick;
   color c;
 } slot;
 
@@ -97,17 +89,17 @@ typedef struct {
   tetrimino current;
   tetrimino held;
   bool piece_held;
-  u8 current_index;
+  int current_index;
 
   /* internal game tick */
-  u32 tick;
-  u32 next_drop_tick;
-  u32 next_piece_tick;
-  u32 down_move_tick;
+  int tick;
+  int next_drop_tick;
+  int next_piece_tick;
+  int down_move_tick;
 
   /* progress trackers */
-  u32 lines;
-  u32 level;
+  int lines;
+  int level;
   bool game_over;
 
   /* scoring flags */
@@ -115,7 +107,7 @@ typedef struct {
   bool mini_tspin;
 
   /* score counter  */
-  u32 score;
+  int score;
 } cetris_game;
 
 /* PROTOTYPES */
@@ -129,9 +121,9 @@ static void rotate_piece(cetris_game *g, bool clockwise);
 static void init_piece_queue(cetris_game *g);
 static void shuffle_queue(cetris_game *g);
 static void make_ghosts(cetris_game *g);
-static void add_score(cetris_game *g, u8 lines);
+static void add_score(cetris_game *g, int lines);
 static void reset_tetrimino(tetrimino *t);
-static s8 check_matrix(cetris_game *g, piece_matrix *m);
+static int check_matrix(cetris_game *g, piece_matrix *m);
 static void set_matrix(cetris_game *g, piece_matrix *m);
 static void rotate_matrix(cetris_game *g, piece_matrix *m, bool clockwise);
 
@@ -185,7 +177,7 @@ static const vec2 basic_movements[5] = {
 
 // https://tetris.fandom.com/wiki/Tetris_Worlds
 // TODO: Make this more accurate
-static const u32 level_drop_delay[20] = {60, 48, 37, 28, 21, 16, 11, 8, 6, 4,
+static const int level_drop_delay[20] = {60, 48, 37, 28, 21, 16, 11, 8, 6, 4,
                                          3,  2,  1,  1,  1,  1,  1,  1, 1, 1};
 
 /* GAME FUNCTIONS */
@@ -212,14 +204,14 @@ CETRIS_EXPORT void init_game(cetris_game *g) {
 }
 
 void init_piece_queue(cetris_game *g) {
-  for (u8 i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++) {
     g->piece_queue[i].t = i;
     g->piece_queue[i].c = i + 1;
-    memcpy(g->piece_queue[i].m, default_matrices[i], sizeof(piece_matrix));
     g->piece_queue[i].r = INIT;
     g->piece_queue[i].lock_tick = 0;
     g->piece_queue[i].locked = false;
     g->piece_queue[i].ghost_y = 0;
+    memcpy(g->piece_queue[i].m, default_matrices[i], sizeof(piece_matrix));
 
     /* Pieces should spawn so that on the first down
      * tick the bottom row will show. Values here are adjusted
@@ -230,9 +222,9 @@ void init_piece_queue(cetris_game *g) {
 }
 
 void shuffle_queue(cetris_game *g) {
-  for (u8 i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++) {
     tetrimino t = g->piece_queue[i];
-    u8 rand_index = rand() % 7;
+    int rand_index = rand() % 7;
     g->piece_queue[i] = g->piece_queue[rand_index];
     g->piece_queue[rand_index] = t;
   }
@@ -305,8 +297,8 @@ void next_piece(cetris_game *g) {
 
 void lock_current(cetris_game *g) {
   g->current.locked = true;
-  for (u8 x = 0; x < CETRIS_BOARD_X; x++) {
-    for (u8 y = 0; y < CETRIS_BOARD_Y; y++) {
+  for (int x = 0; x < CETRIS_BOARD_X; x++) {
+    for (int y = 0; y < CETRIS_BOARD_Y; y++) {
       if (g->board[x][y].occupied)
         g->board[x][y].constant = 1;
     }
@@ -315,7 +307,7 @@ void lock_current(cetris_game *g) {
 }
 
 void make_ghosts(cetris_game *g) {
-  u8 orig_y = g->current.pos.y;
+  int orig_y = g->current.pos.y;
   while (true) {
     g->current.pos.y++;
     if (check_matrix(g, &g->current.m) <= 0) {
@@ -330,10 +322,10 @@ void update_board(cetris_game *g) {
   if (g->game_over)
     return;
 
-  u8 lines_cleared = 0;
-  for (u8 y = 0; y < CETRIS_BOARD_Y; y++) {
+  int lines_cleared = 0;
+  for (int y = 0; y < CETRIS_BOARD_Y; y++) {
     bool clear_line = true;
-    for (u8 x = 0; x < CETRIS_BOARD_X; x++) {
+    for (int x = 0; x < CETRIS_BOARD_X; x++) {
       if (!g->board[x][y].constant) {
         memset(&g->board[x][y], 0, sizeof(slot));
       }
@@ -344,8 +336,8 @@ void update_board(cetris_game *g) {
     }
     // remove tick only tracked on first block of line
     if (g->board[0][y].remove_tick && g->board[0][y].remove_tick <= g->tick) {
-      for (s8 s = y - 1; s >= 0; s--) {
-        for (u8 x = 0; x < CETRIS_BOARD_X; x++) {
+      for (int s = y - 1; s >= 0; s--) {
+        for (int x = 0; x < CETRIS_BOARD_X; x++) {
           g->board[x][s + 1] = g->board[x][s];
         }
       }
@@ -382,7 +374,7 @@ void update_board(cetris_game *g) {
 /* SCORE FUNCTIONS */
 
 // TODO: hard score
-void add_score(cetris_game *g, u8 lines) {
+void add_score(cetris_game *g, int lines) {
   if (!g->tspin && !g->mini_tspin) {
     switch (lines) {
     case 1:
@@ -480,7 +472,7 @@ void move_current(cetris_game *g, input_t move) {
   g->current.pos.y += basic_movements[move].y;
   g->current.pos.x += basic_movements[move].x;
 
-  s8 check = check_matrix(g, &g->current.m);
+  int check = check_matrix(g, &g->current.m);
   if (check <= 0) {
     g->current.pos.y -= basic_movements[move].y;
     g->current.pos.x -= basic_movements[move].x;
@@ -502,7 +494,7 @@ void hard_drop(cetris_game *g) {
   if (g->game_over || g->next_piece_tick)
     return;
 
-  u8 drop_count = 0;
+  int drop_count = 0;
   while (true) {
     g->current.pos.y++;
     drop_count++;
@@ -526,7 +518,7 @@ void rotate_piece(cetris_game *g, bool clockwise) {
     return;
 
   rstate next = 0;
-  u8 wall_kick = 0;
+  int wall_kick = 0;
   switch (g->current.r) {
   case INIT:
     if (clockwise) {
@@ -574,7 +566,7 @@ void rotate_piece(cetris_game *g, bool clockwise) {
   vec2 kick;
   bool set_current = false;
   bool did_kick = false;
-  for (u8 i = 0; i < 5; i++) {
+  for (int i = 0; i < 5; i++) {
     if (g->current.t == I) {
       kick = srs_wall_kicks_i[wall_kick][i];
     } else {
@@ -600,7 +592,7 @@ void rotate_piece(cetris_game *g, bool clockwise) {
     /* check for tspin */
     if (g->current.t == T) {
       bool did_tspin = true;
-      for (u8 i = 1; i < 5; i++) {
+      for (int i = 1; i < 5; i++) {
         g->current.pos.x += basic_movements[i].x;
         g->current.pos.y += basic_movements[i].y;
 
@@ -627,9 +619,9 @@ void rotate_piece(cetris_game *g, bool clockwise) {
 
 /* FUNCTIONS FOR MATRIX INTERATIONS */
 
-s8 check_matrix(cetris_game *g, piece_matrix *m) {
-  for (s8 y = 0; y < 4; y++) {
-    for (s8 x = 0; x < 4; x++) {
+int check_matrix(cetris_game *g, piece_matrix *m) {
+  for (int y = 0; y < 4; y++) {
+    for (int x = 0; x < 4; x++) {
       vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
       if (r.y < 0)
         continue;
@@ -647,8 +639,8 @@ s8 check_matrix(cetris_game *g, piece_matrix *m) {
 }
 
 void set_matrix(cetris_game *g, piece_matrix *m) {
-  for (s8 y = 0; y < 4; y++) {
-    for (s8 x = 0; x < 4; x++) {
+  for (int y = 0; y < 4; y++) {
+    for (int x = 0; x < 4; x++) {
       if ((*m)[y][x]) {
         vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
         if (r.y >= 0) {
@@ -666,11 +658,11 @@ void set_matrix(cetris_game *g, piece_matrix *m) {
 }
 
 void rotate_matrix(cetris_game *g, piece_matrix *m, bool clockwise) {
-  for (u8 x = 0; x < 4; x++) {
-    for (u8 y = 0; y < 4; y++) {
+  for (int x = 0; x < 4; x++) {
+    for (int y = 0; y < 4; y++) {
       if (g->current.m[y][x]) {
-        u8 new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
-        u8 new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
+        int new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
+        int new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
 
         if (g->current.t == I) {
           if (clockwise)
