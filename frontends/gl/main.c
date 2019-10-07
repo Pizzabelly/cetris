@@ -131,7 +131,7 @@ void load_fragment_shader(GLuint program) {
   glDeleteShader(fragment_shader);
 }
 
-void create_static_2d(drawable *b, int w, int h, char* texture_file) {
+void create_static_2d(drawable *b, char* texture_file) {
   glGenVertexArrays(1, &b->vao);
   glGenBuffers(1, &b->vbo);
   glGenBuffers(1, &b->ebo);
@@ -218,11 +218,8 @@ int main(void) {
   glLinkProgram(shader_program);
 
   drawable block;
-  create_static_2d(&block, 124, 124, "block.jpg");
+  create_static_2d(&block, "block.jpg");
 
-  drawable play_field;
-  
-  
 
   init_game(&cetris);
 
@@ -231,8 +228,6 @@ int main(void) {
   glfwSetKeyCallback(window, input_callback);
 
   while(!glfwWindowShouldClose(window)) {
-    //process_input(window);
-
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
