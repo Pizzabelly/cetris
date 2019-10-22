@@ -91,14 +91,13 @@ void curses_init() {
 #endif
 
   start_color();
-  init_pair(COLOR_NONE, COLOR_BLACK, COLOR_BLACK);
-  init_pair(COLOR_O, COLOR_YELLOW, COLOR_BLACK);
-  init_pair(COLOR_Z, COLOR_RED, COLOR_BLACK);
-  init_pair(COLOR_S, COLOR_GREEN, COLOR_BLACK);
-  init_pair(COLOR_T, COLOR_MAGENTA, COLOR_BLACK);
-  init_pair(COLOR_L, COLOR_WHITE, COLOR_BLACK); // should be orange
-  init_pair(COLOR_I, COLOR_CYAN, COLOR_BLACK);
-  init_pair(COLOR_J, COLOR_BLUE, COLOR_BLACK);
+  init_pair(MINO_O, COLOR_YELLOW, COLOR_BLACK);
+  init_pair(MINO_Z, COLOR_RED, COLOR_BLACK);
+  init_pair(MINO_S, COLOR_GREEN, COLOR_BLACK);
+  init_pair(MINO_T, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(MINO_L, COLOR_WHITE, COLOR_BLACK); // should be orange
+  init_pair(MINO_I, COLOR_CYAN, COLOR_BLACK);
+  init_pair(MINO_J, COLOR_BLUE, COLOR_BLACK);
   clear();
 }
 
@@ -127,30 +126,30 @@ void draw_board() {
     for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
       int draw_y = y - CETRIS_BOARD_VISABLE + Y_OFFSET;
       int draw_x = x * 2 + X_OFFSET;
-      if (game.board[x][y].ghost) {
+      if (game.board[x][y] & SLOT_GHOST) {
         attron(A_DIM);
         mvaddstr(draw_y, draw_x, BLOCK);
         attroff(A_DIM);
       }
-      if (game.board[x][y].occupied) {
-	      attron(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
-        if (game.board[0][y].remove_tick) {
+      if (game.board[x][y] & SLOT_OCCUPIED) {
+	      attron(COLOR_PAIR(game.board[x][y] >> 5) | A_BOLD);
+        if (game.line_remove_tick[y]) {
           if (game.tick % 2 == 0) {
             mvaddstr(draw_y, draw_x, BLOCK);
           }
         } else {
           mvaddstr(draw_y, draw_x, BLOCK);
         }
-	      attroff(COLOR_PAIR(game.board[x][y].c) | A_BOLD);
+	      attroff(COLOR_PAIR(game.board[x][y] >> 5) | A_BOLD);
       }
     }
 
     int index = game.current_index;
-	  attron(COLOR_PAIR(game.piece_queue[index].c));
+	  attron(COLOR_PAIR(game.piece_queue[index].t));
     for (int x = 0; x < 4; x++) {
       for (int y = 0; y < 4; y++) {
         if (game.piece_queue[index].m[y][x]) {
-          if (game.piece_queue[index].t == I || game.piece_queue[index].t == O) {
+          if (game.piece_queue[index].t == MINO_I || game.piece_queue[index].t == MINO_O) {
             mvaddstr(6 + y, (x * 2) + 36, BLOCK);
           } else {
             mvaddstr(6 + y, (x * 2) + 37, BLOCK);
@@ -158,7 +157,7 @@ void draw_board() {
         }
       }
     }
-	  attroff(COLOR_PAIR(game.piece_queue[index].c));
+	  attroff(COLOR_PAIR(game.piece_queue[index].t));
 
     attron(A_BOLD);
 

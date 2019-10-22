@@ -56,8 +56,8 @@ GLuint indices[] = {
   1, 2, 3  // second triangle
 };
 
-rbg_color colors[8] = {
-  {0.0f, 0.0f, 0.0f},     // Black
+rbg_color colors[7] = {
+  //{0.0f, 0.0f, 0.0f},     // Black
   {0.127f,0.219f,0.255f}, // Aqua
   {0.61f,0.153f,0.112f},  // Olive
   {0.177f,0.13f,0.201f},  // Purple
@@ -236,8 +236,8 @@ int main(void) {
     glBindVertexArray(block.vao);
     for (int x = 0; x < CETRIS_BOARD_X; x++) {
       for (int y = 0; y < CETRIS_BOARD_Y; y++) {
-        if (cetris.board[x][y].occupied) {
-          update_block(&block, x, y, cetris.board[x][y].c);  
+        if (cetris.board[x][y].flags & SLOT_OCCUPIED) {
+          update_block(&block, x, y, cetris.board[x][y].color);  
           glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         }
       }
