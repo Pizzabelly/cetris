@@ -47,7 +47,6 @@ enum {
 enum {
   SLOT_OCCUPIED = 1,
   SLOT_GHOST =    1 << 1,
-  SLOT_CONSTANT = 1 << 2
 };
 
 enum { 
@@ -80,6 +79,7 @@ typedef enum {
 typedef struct {
   /* playfield represented by a 2d array */
   uint8_t board[CETRIS_BOARD_X][CETRIS_BOARD_Y];
+  int8_t highest_line;
 
   /* constant queue of all 7 possible tetrimino */
   uint8_t piece_queue[7];
@@ -122,15 +122,15 @@ const piece_matrix default_matrices[7] = {
 /* SRS WALL KICK VALUES */
 
 // https://tetris.wiki/SRS
-static const vec2 srs_wall_kicks[8][4] = {
-    {{-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 0->R
-    {{1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->0
-    {{1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->2
-    {{-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 2->R
-    {{1, 0}, {1, 1}, {0, -2}, {1, -2}},    // 2->L
-    {{-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->2
-    {{-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->0
-    {{1, 0}, {1, 1}, {0, -2}, {1, -2}}     // 0->L
+static const vec2 srs_wall_kicks[8][5] = {
+    {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 0->R
+    {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->0
+    {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->2
+    {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 2->R
+    {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}},    // 2->L
+    {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->2
+    {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->0
+    {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}}     // 0->L
 };
 
 static const vec2 srs_wall_kicks_i[8][5] = {
@@ -203,8 +203,7 @@ static int check_matrix(cetris_game *g, piece_matrix *m) {
           return 0;
         if (r.y >= CETRIS_BOARD_Y)
           return -1;
-        if ((g->board[r.x][r.y] & SLOT_OCCUPIED) 
-            && (g->board[r.x][r.y] & SLOT_CONSTANT))
+        if (g->board[r.x][r.y] & SLOT_OCCUPIED)
           return -1;
       }
     }
@@ -281,19 +280,12 @@ static void add_score(cetris_game *g, int lines) {
 }
 
 static void make_ghosts(cetris_game *g) {
-  int orig_y = g->current.pos.y;
+  int8_t orig_y = g->current.pos.y;
   while (check_matrix(g, &g->current.m) > 0) {
     g->current.pos.y++;
   }
   g->current.ghost_y = g->current.pos.y - 1;
   g->current.pos.y = orig_y;
-}
-
-static void reset_tetrimino(tetrimino *t) {
-  t->r = INIT;
-  t->pos.x = 3;
-  t->pos.y = (t->t == MINO_I) ? 17 : 16;
-  t->ghost_y = 0;
 }
 
 static void move_current(cetris_game *g, input_t move) {
@@ -346,12 +338,19 @@ static void next_piece(cetris_game *g) {
 
 static void lock_current(cetris_game *g) {
   g->current.locked = true;
-  for (int x = 0; x < CETRIS_BOARD_X; x++) {
-    for (int y = 0; y < CETRIS_BOARD_Y; y++) {
-      if (g->board[x][y] & SLOT_OCCUPIED)
-        g->board[x][y] |= SLOT_CONSTANT;
+  for (int y = 0; y < 4; y++) {
+    for (int x = 0; x < 4; x++) {
+      if ((g->current.m[y]>>(3 - x))&1) {
+        g->board[g->current.pos.x + x][g->current.pos.y + y] |= SLOT_OCCUPIED;
+        g->board[g->current.pos.x + x][g->current.pos.y + y] |= g->current.t << 5;
+      }
     }
   }
+
+  if (g->current.pos.y < g->highest_line) {
+    g->highest_line = g->current.pos.y;
+  }
+
   update_board(g);
 }
 
@@ -369,8 +368,8 @@ static void hard_drop(cetris_game *g) {
 
   g->score += 2 * drop_count; // 2 score for each hard-drop'd cell
 
-  update_board(g);
   lock_current(g);
+  update_board(g);
 }
 
 static void rotate_matrix(cetris_game *g, piece_matrix *m, bool clockwise) {
@@ -411,33 +410,27 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
 
   rotate_matrix(g, &m, clockwise);
 
+  vec2 kick;
   bool set_current = false;
-  if (check_matrix(g, &m) > 0) {
-    set_current = true;
-  }
-
   bool did_kick = false;
-  if (!set_current) {
-    vec2 kick;
-    for (int i = 0; i < 4; i++) {
-      if (g->current.t == MINO_I) {
-        kick = srs_wall_kicks_i[wall_kick][i];
-      } else {
-        kick = srs_wall_kicks[wall_kick][i];
-      }
-
-      g->current.pos.x += kick.x;
-      g->current.pos.y += kick.y;
-
-      if (check_matrix(g, &m) > 0) {
-        set_current = true;
-        break;
-      } else {
-        g->current.pos.x -= kick.x;
-        g->current.pos.y -= kick.y;
-      }
+  for (int i = 0; i < 4; i++) {
+    if (g->current.t == MINO_I) {
+      kick = srs_wall_kicks_i[wall_kick][i];
+    } else {
+      kick = srs_wall_kicks[wall_kick][i];
     }
-    did_kick = true;
+
+    g->current.pos.x += kick.x;
+    g->current.pos.y += kick.y;
+
+    if (check_matrix(g, &m) > 0) {
+      set_current = true;
+      if (i > 0) did_kick = true;
+      break;
+    }
+
+    g->current.pos.x -= kick.x;
+    g->current.pos.y -= kick.y;
   }
 
   if (set_current) {
@@ -472,13 +465,9 @@ void update_board(cetris_game *g) {
     return;
 
   int lines_cleared = 0;
-  for (int y = 0; y < CETRIS_BOARD_Y; y++) {
+  for (int y = g->highest_line; y < CETRIS_BOARD_Y; y++) {
     bool clear_line = true;
     for (int x = 0; x < CETRIS_BOARD_X; x++) {
-      if (!(g->board[x][y] & SLOT_CONSTANT)) {
-        g->board[x][y] = 0;
-      }
-
       if (!(g->board[x][y] & SLOT_OCCUPIED) 
           || g->line_remove_tick[y] > 0) {
         clear_line = false;
@@ -500,7 +489,7 @@ void update_board(cetris_game *g) {
   }
 
   make_ghosts(g);
-  set_matrix(g, &g->current.m);
+  //set_matrix(g, &g->current.m);
 
   assert(lines_cleared <= 4);
 
@@ -528,8 +517,7 @@ CETRIS_EXPORT void hold_piece(cetris_game *g) {
     g->current = g->held;
     g->held = tmp;
   } else {
-    g->held = g->current;
-    reset_tetrimino(&g->held);
+    set_piece(g->current.t, &g->held);
     g->piece_held = true;
     next_piece(g);
   }
@@ -570,6 +558,7 @@ CETRIS_EXPORT void init_game(cetris_game *g) {
   memset(g, 0, sizeof(cetris_game));
 
   g->level = CETRIS_STARTING_LEVEL;
+  g->highest_line = CETRIS_BOARD_Y;
 
   init_queue(g);
   shuffle_queue(g);
@@ -608,11 +597,12 @@ CETRIS_EXPORT void update_game_tick(cetris_game *g) {
   if (!g->next_piece_tick && g->current.lock_tick &&
       g->current.lock_tick <= g->tick) {
     g->current.pos.y++;
-    if (check_matrix(g, &g->current.m) <= 0) {
+    int8_t res = check_matrix(g, &g->current.m);
+    g->current.pos.y--;
+    if (res <= 0) {
       lock_current(g);
       did_move = true;
     }
-    g->current.pos.y--;
     g->current.lock_tick = 0;
   }
 

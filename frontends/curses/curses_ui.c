@@ -84,7 +84,7 @@ void curses_init() {
   curs_set(0);
   noecho();
   keypad(stdscr, TRUE);
-  nodelay(stdscr, true);
+  timeout(16);
 
 #ifdef _WIN32 // only resize manually on windows
   resize_term(WIN_LINE, WIN_COL);
@@ -122,15 +122,32 @@ void *game_loop(void) {
 
 void draw_board() {
   mvaddstr(0, 0, PLAY_FIELD_STR);
-  for (int x = 0; x < CETRIS_BOARD_X; x++) {
-    for (int y = CETRIS_BOARD_VISABLE; y < CETRIS_BOARD_Y; y++) {
-      int draw_y = y - CETRIS_BOARD_VISABLE + Y_OFFSET;
-      int draw_x = x * 2 + X_OFFSET;
-      if (game.board[x][y] & SLOT_GHOST) {
-        attron(A_DIM);
+
+  for (int y = 0; y < 4; y++) {
+    for (int x = 0; x < 4; x++) {
+      if ((game.current.m[y]>>(3 - x))&1) {
+        int draw_x = X_OFFSET + ((x + game.current.pos.x) * 2);
+        int draw_y = Y_OFFSET + (y + game.current.pos.y) - CETRIS_BOARD_VISABLE;
+        int ghost_y = Y_OFFSET + (y + game.current.ghost_y) - CETRIS_BOARD_VISABLE;
+	      attron(COLOR_PAIR(game.current.t) | A_BOLD);
         mvaddstr(draw_y, draw_x, BLOCK);
+
+        if ((default_matrices[game.piece_queue[game.current_index]][y]>>(3 - x))&1) {
+          mvaddstr(6 + y, (x * 2) + 36, BLOCK);
+        }
+
+	      attroff(COLOR_PAIR(game.current.t) | A_BOLD);
+        attron(A_DIM);
+        mvaddstr(ghost_y, draw_x, BLOCK);
         attroff(A_DIM);
       }
+    }
+  }
+
+  for (int x = 0; x < CETRIS_BOARD_X; x++) {
+    for (int y = game.highest_line; y < CETRIS_BOARD_Y; y++) {
+      int draw_y = y - CETRIS_BOARD_VISABLE + Y_OFFSET;
+      int draw_x = x * 2 + X_OFFSET;
       if (game.board[x][y] & SLOT_OCCUPIED) {
 	      attron(COLOR_PAIR(game.board[x][y] >> 5) | A_BOLD);
         if (game.line_remove_tick[y]) {
@@ -143,17 +160,6 @@ void draw_board() {
 	      attroff(COLOR_PAIR(game.board[x][y] >> 5) | A_BOLD);
       }
     }
-
-    int index = game.current_index;
-	  attron(COLOR_PAIR(game.piece_queue[index]));
-    for (int x = 0; x < 4; x++) {
-      for (int y = 0; y < 4; y++) {
-        if ((default_matrices[game.piece_queue[index]][y]>>(3 - x))&1) {
-          mvaddstr(6 + y, (x * 2) + 36, BLOCK);
-        }
-      }
-    }
-	  attroff(COLOR_PAIR(game.piece_queue[index]));
 
     attron(A_BOLD);
 
