@@ -32,7 +32,7 @@ typedef struct {
   int8_t y;
 } vec2;
 
-typedef uint8_t piece_matrix[4][4];
+typedef uint8_t piece_matrix[4];
 
 enum {
   MINO_O,
@@ -50,16 +50,21 @@ enum {
   SLOT_CONSTANT = 1 << 2
 };
 
-typedef enum { INIT, ONCE_RIGHT, ONCE_LEFT, TWICE } srs_state;
+enum { 
+  INIT, 
+  ONCE_RIGHT, 
+  TWICE, 
+  ONCE_LEFT 
+};
 
 typedef struct {
-  uint8_t t;
   vec2 pos;
-  srs_state r;
-  piece_matrix m;
+  uint8_t t;
+  uint8_t r;
   uint8_t ghost_y;
   uint16_t lock_tick;
   bool locked;
+  piece_matrix m;
 } tetrimino;
 
 typedef enum {
@@ -77,7 +82,7 @@ typedef struct {
   uint8_t board[CETRIS_BOARD_X][CETRIS_BOARD_Y];
 
   /* constant queue of all 7 possible tetrimino */
-  tetrimino piece_queue[7];
+  uint8_t piece_queue[7];
 
   /* current tetrimino */
   tetrimino current;
@@ -105,33 +110,27 @@ typedef struct {
   uint16_t score;
 } cetris_game;
 
-static piece_matrix default_matrices[7] = {
-    {{0, 0, 0, 0}, {0, 1, 1, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}},
-
-    {{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}},
-
-    {{0, 0, 0, 0}, {0, 1, 1, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}},
-
-    {{0, 0, 0, 0}, {1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}},
-
-    {{0, 0, 0, 0}, {0, 0, 1, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}},
-
-    {{0, 0, 0, 0}, {1, 0, 0, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}},
-
-    {{0, 0, 0, 0}, {0, 1, 0, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}}};
+const piece_matrix default_matrices[7] = {
+    { 0b0000, 0b0110, 0b0110, 0b0000},
+    { 0b0000, 0b1111, 0b0000, 0b0000},
+    { 0b0000, 0b0110, 0b1100, 0b0000},
+    { 0b0000, 0b1100, 0b0110, 0b0000},
+    { 0b0000, 0b0010, 0b1110, 0b0000},
+    { 0b0000, 0b1000, 0b1110, 0b0000},
+    { 0b0000, 0b0100, 0b1110, 0b0000}};
 
 /* SRS WALL KICK VALUES */
 
 // https://tetris.wiki/SRS
-static const vec2 srs_wall_kicks[8][5] = {
-    {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 0->R
-    {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->0
-    {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->2
-    {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 2->R
-    {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}},    // 2->L
-    {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->2
-    {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->0
-    {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}}     // 0->L
+static const vec2 srs_wall_kicks[8][4] = {
+    {{-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 0->R
+    {{1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->0
+    {{1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->2
+    {{-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 2->R
+    {{1, 0}, {1, 1}, {0, -2}, {1, -2}},    // 2->L
+    {{-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->2
+    {{-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->0
+    {{1, 0}, {1, 1}, {0, -2}, {1, -2}}     // 0->L
 };
 
 static const vec2 srs_wall_kicks_i[8][5] = {
@@ -146,55 +145,60 @@ static const vec2 srs_wall_kicks_i[8][5] = {
 };
 
 static const vec2 basic_movements[5] = {
-    {0, 0},
-    {0, 1},
-    {0, 1},
-    {1, 0},
-    {-1, 0} // NONE, DOWN, USER_DOWN, RIGHT, LEFT
+    {0, 0}, // NONE
+    {0, 1}, // DOWN
+    {0, 1}, // USER_DOWN
+    {1, 0}, // RIGHT
+    {-1, 0} // LEFT
 };
 
 // https://tetris.fandom.com/wiki/Tetris_Worlds
 // TODO: Make this more accurate
 static const int level_drop_delay[20] = {60, 48, 37, 28, 21, 16, 11, 8, 6, 4,
                                          3,  2,  1,  1,  1,  1,  1,  1, 1, 1};
+
 static void update_board(cetris_game *g);
+
 CETRIS_EXPORT void update_game_tick(cetris_game *g);
 CETRIS_EXPORT void hold_piece(cetris_game *g);
 CETRIS_EXPORT void init_game(cetris_game *g);
 CETRIS_EXPORT void hold_piece(cetris_game *g);
 
-static void init_piece_queue(cetris_game *g) {
-  for (int i = 0; i < 7; i++) {
-    g->piece_queue[i].t = i;
-    g->piece_queue[i].r = INIT;
-    g->piece_queue[i].lock_tick = 0;
-    g->piece_queue[i].ghost_y = 0;
-    memcpy(g->piece_queue[i].m, default_matrices[i], sizeof(piece_matrix));
+static void set_piece(uint8_t type, tetrimino* mino) {
+  memset(mino, 0, sizeof(tetrimino));
 
-    /* Pieces should spawn so that on the first down
-     * tick the bottom row will show. Values here are adjusted
-     * for the default 4x4 matricies for each piece */
-    g->piece_queue[i].pos.x = 3;
-    g->piece_queue[i].pos.y = (i == MINO_I) ? 17 : 16;
+  mino->t = type;
+  memcpy(mino->m, default_matrices[type], sizeof(piece_matrix));
+
+  /* Pieces should spawn so that on the first down
+   * tick the bottom row will show. Values here are adjusted
+   * for the default 4x4 matricies for each piece */
+  mino->pos.x = 3;
+  mino->pos.y = (type == MINO_I) ? 17 : 16;
+}
+
+static void init_queue(cetris_game *g) {
+  for (int i = 0; i < 7; i++) {
+    g->piece_queue[i] = i;
   }
 }
 
 static void shuffle_queue(cetris_game *g) {
   for (int i = 0; i < 7; i++) {
-    tetrimino t = g->piece_queue[i];
     int rand_index = rand() % 7;
+    uint8_t tmp = g->piece_queue[i];
     g->piece_queue[i] = g->piece_queue[rand_index];
-    g->piece_queue[rand_index] = t;
+    g->piece_queue[rand_index] = tmp;
   }
 }
 
 static int check_matrix(cetris_game *g, piece_matrix *m) {
-  for (int y = 0; y < 4; y++) {
-    for (int x = 0; x < 4; x++) {
+  for (uint8_t y = 0; y < 4; y++) {
+    for (uint8_t x = 0; x < 4; x++) {
       vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
       if (r.y < 0)
         continue;
-      if ((*m)[y][x]) {
+      if (((*m)[y]>>(3 - x))&1) {
         if (r.x >= CETRIS_BOARD_X || r.x < 0)
           return 0;
         if (r.y >= CETRIS_BOARD_Y)
@@ -211,7 +215,7 @@ static int check_matrix(cetris_game *g, piece_matrix *m) {
 static void set_matrix(cetris_game *g, piece_matrix *m) {
   for (int y = 0; y < 4; y++) {
     for (int x = 0; x < 4; x++) {
-      if ((*m)[y][x]) {
+      if (((*m)[y]>>(3 - x))&1) {
         vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
         if (r.y >= 0) {
           if (!(g->board[r.x][r.y] & SLOT_OCCUPIED)) {
@@ -321,7 +325,8 @@ static void next_piece(cetris_game *g) {
   g->next_drop_tick = 0;
   g->next_piece_tick = 0;
 
-  g->current = g->piece_queue[g->current_index];
+  set_piece(g->piece_queue[g->current_index], &g->current);
+
   if (check_matrix(g, &g->current.m) <= 0) {
     g->game_over = true;
   }
@@ -369,20 +374,17 @@ static void hard_drop(cetris_game *g) {
 }
 
 static void rotate_matrix(cetris_game *g, piece_matrix *m, bool clockwise) {
-  for (int x = 0; x < 4; x++) {
-    for (int y = 0; y < 4; y++) {
-      if (g->current.m[y][x]) {
-        int new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
-        int new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
+  for (uint8_t x = 0; x < 4; x++) {
+    for (uint8_t y = 0; y < 4; y++) {
+      if ((g->current.m[y]>>(3 - x))&1) {
+        uint8_t new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
+        uint8_t new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
 
         if (g->current.t == MINO_I) {
-          if (clockwise)
-            new_y--;
-          else
-            new_x++;
+          clockwise ? new_y-- : new_x++;
         }
-
-        (*m)[new_y][new_x] = 1;
+        
+        (*m)[new_y] |= (uint8_t)0b1000 >> (new_x);
       }
     }
   }
@@ -393,79 +395,52 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
     return;
   if (g->current.t == MINO_O)
     return;
-
-  srs_state next = 0;
-  int wall_kick = 0;
-  switch (g->current.r) {
-  case INIT:
-    if (clockwise) {
-      next = ONCE_RIGHT;
-      wall_kick = 0;
-    } else {
-      next = ONCE_LEFT;
-      wall_kick = 7;
-    }
-    break;
-  case ONCE_RIGHT:
-    if (clockwise) {
-      next = TWICE;
-      wall_kick = 2;
-    } else {
-      next = INIT;
-      wall_kick = 1;
-    }
-    break;
-  case ONCE_LEFT:
-    if (clockwise) {
-      next = INIT;
-      wall_kick = 6;
-    } else {
-      next = TWICE;
-      wall_kick = 5;
-    }
-    break;
-  case TWICE:
-    if (clockwise) {
-      next = ONCE_LEFT;
-      wall_kick = 4;
-    } else {
-      next = ONCE_RIGHT;
-      wall_kick = 3;
-    }
-    break;
+  
+  uint8_t next = 0;
+  uint8_t wall_kick = 0;
+  if (clockwise) {
+    next = (g->current.r + 1)%4;
+    wall_kick = g->current.r * 2;
+  } else {
+    next = ((g->current.r - 1) + 4)%4;
+    wall_kick = (next * 2) + 1;
   }
 
   piece_matrix m;
-  memset(m, 0, sizeof(piece_matrix));
+  memset(&m, 0, sizeof(piece_matrix));
 
   rotate_matrix(g, &m, clockwise);
 
-  vec2 kick;
   bool set_current = false;
+  if (check_matrix(g, &m) > 0) {
+    set_current = true;
+  }
+
   bool did_kick = false;
-  for (int i = 0; i < 5; i++) {
-    if (g->current.t == MINO_I) {
-      kick = srs_wall_kicks_i[wall_kick][i];
-    } else {
-      kick = srs_wall_kicks[wall_kick][i];
-    }
+  if (!set_current) {
+    vec2 kick;
+    for (int i = 0; i < 4; i++) {
+      if (g->current.t == MINO_I) {
+        kick = srs_wall_kicks_i[wall_kick][i];
+      } else {
+        kick = srs_wall_kicks[wall_kick][i];
+      }
 
-    g->current.pos.x += kick.x;
-    g->current.pos.y += kick.y;
+      g->current.pos.x += kick.x;
+      g->current.pos.y += kick.y;
 
-    if (check_matrix(g, &m) > 0) {
-      set_current = true;
-      if (i > 0)
-        did_kick = true;
-      break;
-    } else {
-      g->current.pos.x -= kick.x;
-      g->current.pos.y -= kick.y;
+      if (check_matrix(g, &m) > 0) {
+        set_current = true;
+        break;
+      } else {
+        g->current.pos.x -= kick.x;
+        g->current.pos.y -= kick.y;
+      }
     }
+    did_kick = true;
   }
 
   if (set_current) {
-
     /* check for tspin */
     if (g->current.t == MINO_T) {
       bool did_tspin = true;
@@ -481,15 +456,13 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
       }
 
       if (did_tspin) {
-        if (did_kick)
-          g->mini_tspin = true;
-        else
-          g->tspin = true;
+        if (did_kick) g->mini_tspin = true;
+        else g->tspin = true;
       }
     }
 
     g->current.r = next;
-    memcpy(g->current.m, m, sizeof(piece_matrix));
+    memcpy(g->current.m, &m, sizeof(piece_matrix));
     update_board(g);
   }
 }
@@ -549,8 +522,6 @@ void update_board(cetris_game *g) {
   }
 }
 
-
-
 CETRIS_EXPORT void hold_piece(cetris_game *g) {
   if (g->piece_held) {
     tetrimino tmp = g->current;
@@ -600,7 +571,7 @@ CETRIS_EXPORT void init_game(cetris_game *g) {
 
   g->level = CETRIS_STARTING_LEVEL;
 
-  init_piece_queue(g);
+  init_queue(g);
   shuffle_queue(g);
 
   next_piece(g);
@@ -645,8 +616,7 @@ CETRIS_EXPORT void update_game_tick(cetris_game *g) {
     g->current.lock_tick = 0;
   }
 
-  if (did_move)
-    update_board(g);
+  if (did_move) update_board(g);
 }
 
 #endif /* CETRIS_H */

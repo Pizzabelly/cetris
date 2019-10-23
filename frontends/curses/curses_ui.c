@@ -145,19 +145,15 @@ void draw_board() {
     }
 
     int index = game.current_index;
-	  attron(COLOR_PAIR(game.piece_queue[index].t));
+	  attron(COLOR_PAIR(game.piece_queue[index]));
     for (int x = 0; x < 4; x++) {
       for (int y = 0; y < 4; y++) {
-        if (game.piece_queue[index].m[y][x]) {
-          if (game.piece_queue[index].t == MINO_I || game.piece_queue[index].t == MINO_O) {
-            mvaddstr(6 + y, (x * 2) + 36, BLOCK);
-          } else {
-            mvaddstr(6 + y, (x * 2) + 37, BLOCK);
-          }
+        if ((default_matrices[game.piece_queue[index]][y]>>(3 - x))&1) {
+          mvaddstr(6 + y, (x * 2) + 36, BLOCK);
         }
       }
     }
-	  attroff(COLOR_PAIR(game.piece_queue[index].t));
+	  attroff(COLOR_PAIR(game.piece_queue[index]));
 
     attron(A_BOLD);
 
