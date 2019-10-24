@@ -84,7 +84,7 @@ void curses_init() {
   curs_set(0);
   noecho();
   keypad(stdscr, TRUE);
-  timeout(16);
+  timeout(2);
 
 #ifdef _WIN32 // only resize manually on windows
   resize_term(WIN_LINE, WIN_COL);

@@ -421,7 +421,7 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
     }
 
     g->current.pos.x += kick.x;
-    g->current.pos.y += kick.y;
+    g->current.pos.y -= kick.y;
 
     if (check_matrix(g, &m) > 0) {
       set_current = true;
@@ -430,7 +430,7 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
     }
 
     g->current.pos.x -= kick.x;
-    g->current.pos.y -= kick.y;
+    g->current.pos.y += kick.y;
   }
 
   if (set_current) {
