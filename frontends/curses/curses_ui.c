@@ -197,40 +197,38 @@ int main(void) {
   pthread_create(&thread, NULL, (void*)game_loop, (void*)0);
 #endif
 
+  int c;
   while(1) {
-    int keys[25]; int key_count = 0;
-    while((keys[key_count] = getch()) != ERR) key_count++;
-    for (int i = 0; i < key_count; i++) {
-      switch (keys[i]) {
-        case 'q': endwin(); exit(1);
-        case 27: // esc or alt
-          is_paused = !is_paused; break;
-        case 'r':
-          if (game.game_over) {
-            init_game(&game);
-          }
-          break;
-      }
-      if (is_paused) continue; // dont allow input if paused
-      switch (keys[i]) {
-        case KEY_LEFT:
-          move_piece(&game, LEFT); break;
-        case KEY_RIGHT:
-          move_piece(&game, RIGHT); break;
-        case KEY_DOWN:
-          move_piece(&game, USER_DOWN); break;
-        case KEY_UP:
-        case 'x':
-          move_piece(&game, ROTATE_CW); break;
-        case '^':
-        case 'z':
-          move_piece(&game, ROTATE_CCW); break;
-        case ' ':
-          move_piece(&game, HARD_DROP); break;
-        case KEY_SLEFT:
-        case 'c':
-          hold_piece(&game); break;
-      }
+    c = getch();
+    switch (c) {
+      case 'q': endwin(); exit(1);
+      case 27: // esc or alt
+        is_paused = !is_paused; break;
+      case 'r':
+        if (game.game_over) {
+          init_game(&game);
+        }
+        break;
+    }
+    if (is_paused) continue; // dont allow input if paused
+    switch (c) {
+      case KEY_LEFT:
+        move_piece(&game, LEFT); break;
+      case KEY_RIGHT:
+        move_piece(&game, RIGHT); break;
+      case KEY_DOWN:
+        move_piece(&game, USER_DOWN); break;
+      case KEY_UP:
+      case 'x':
+        move_piece(&game, ROTATE_CW); break;
+      case '^':
+      case 'z':
+        move_piece(&game, ROTATE_CCW); break;
+      case ' ':
+        move_piece(&game, HARD_DROP); break;
+      case KEY_SLEFT:
+      case 'c':
+        hold_piece(&game); break;
     }
     erase();
     draw_board();
