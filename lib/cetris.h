@@ -284,7 +284,11 @@ static void make_ghosts(cetris_game *g) {
   while (check_matrix(g, &g->current.m) > 0) {
     g->current.pos.y++;
   }
-  g->current.ghost_y = g->current.pos.y - 1;
+  if (g->current.pos.y == orig_y) {
+    g->current.ghost_y = orig_y;
+  } else {
+    g->current.ghost_y = g->current.pos.y - 1;
+  }
   g->current.pos.y = orig_y;
 }
 
