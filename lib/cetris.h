@@ -32,7 +32,7 @@ typedef struct {
   int8_t y;
 } vec2;
 
-typedef int8_t piece_matrix[4];
+typedef uint8_t piece_matrix[4];
 
 enum {
   MINO_O,
