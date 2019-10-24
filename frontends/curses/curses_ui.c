@@ -132,14 +132,14 @@ void draw_board() {
 	      attron(COLOR_PAIR(game.current.t) | A_BOLD);
         mvaddstr(draw_y, draw_x, BLOCK);
 
-        if ((default_matrices[game.piece_queue[game.current_index]][y]>>(3 - x))&1) {
-          mvaddstr(6 + y, (x * 2) + 36, BLOCK);
-        }
 
 	      attroff(COLOR_PAIR(game.current.t) | A_BOLD);
         attron(A_DIM);
         mvaddstr(ghost_y, draw_x, BLOCK);
         attroff(A_DIM);
+      }
+      if ((default_matrices[game.piece_queue[game.current_index]][y]>>(3 - x))&1) {
+        mvaddstr(6 + y, (x * 2) + 36, BLOCK);
       }
     }
   }
