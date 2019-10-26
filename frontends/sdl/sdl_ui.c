@@ -1,15 +1,19 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include <pthread.h>
-#include <cetris.h>
 #include <unistd.h>
+#include <time.h>
+#include <cetris.h>
 
 #define W 480
 #define H 640
 
-#define X_OFFSET 25
-#define Y_OFFSET 20
+#define X_OFFSET 40
+#define Y_OFFSET 30
 
 SDL_Renderer* render;
 TTF_Font* font;
@@ -31,16 +35,15 @@ uint8_t colors[8][3] = {
 DWORD WINAPI game_loop(void* data) {
   while(1) {
     Sleep((1.0/60.0) * 1000.0);
-    //if (!is_paused) 
     update_game_tick(&g);
   }
   return 0;
 }
 #else
 void *game_loop(void) {
+  long nsec = (long)(1000000000L/CETRIS_HZ);
   while(1) {
-    sleep((1.0/60.0) * 1000000.0);
-    //if (!is_paused) 
+    nanosleep((const struct timespec[]){{0, nsec}}, NULL);
     update_game_tick(&g);
   }
   return 0;
@@ -54,23 +57,50 @@ void setup() {
   SDL_RenderSetLogicalSize(render, W, H);
   if (!render) exit(fprintf(stderr, "err: could not create SDL renderer\n")); 
 
-  TTF_Init();
-  font = TTF_OpenFont("LiberationMono-Regular.ttf", 18);
+  //TTF_Init();
+  //font = TTF_OpenFont("LiberationMono-Regular.ttf", 18);
 }
 
-void draw(cetris_game* g) {
+void draw() {
+  SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+  SDL_RenderClear(render);
+
   SDL_Rect b = {0, 0, 25, 25}; 
-  for (int x = 0; x < CETRIS_BOARD_X; x++) {
-    for (int y = g->highest_line; y < CETRIS_BOARD_Y; y++) {
-      if (g->board[x][y] & SLOT_OCCUPIED) {
-        b.x = X_OFFSET + (x * 25);
-        b.y = (Y_OFFSET + (y * 25)) - CETRIS_BOARD_VISABLE;
- 
-        uint8_t (*color)[3] = &(colors[(g->board[x][y] >> 5)]);
+
+  for (int y = 0; y < 4; y++) {
+    for (int x = 0; x < 4; x++) {
+      if ((g.current.m[y]>>(3 - x))&1) {
+        b.x = X_OFFSET + ((x + g.current.pos.x) * 25);
+        b.y = (Y_OFFSET + ((y + g.current.pos.y) * 25)) - (CETRIS_BOARD_VISABLE * 25);
+
+        uint8_t (*color)[3] = &(colors[g.current.t]);
         SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
 
-        if (g->line_remove_tick[y]) {
-          if (g->tick % 2 == 0) {
+        SDL_RenderDrawRect(render, &b);
+
+        b.y = (Y_OFFSET + ((y + g.current.ghost_y) * 25)) - (CETRIS_BOARD_VISABLE * 25);
+  
+        SDL_SetRenderDrawColor(render, 0, 0, 0, 255);
+        SDL_RenderDrawRect(render, &b);
+
+      }
+      //if ((default_matrices[game.piece_queue[g.current_index]][y]>>(3 - x))&1) {
+      //  mvaddstr(6 + y, (x * 2) + 36, BLOCK);
+      //}
+    }
+  }
+
+  for (int x = 0; x < CETRIS_BOARD_X; x++) {
+    for (int y = g.highest_line; y < CETRIS_BOARD_Y; y++) {
+      if (g.board[x][y] & SLOT_OCCUPIED) {
+        b.x = X_OFFSET + (x * 25);
+        b.y = (Y_OFFSET + (y * 25)) - (CETRIS_BOARD_VISABLE * 25);
+ 
+        uint8_t (*color)[3] = &(colors[(g.board[x][y] >> 5)]);
+        SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
+
+        if (g.line_remove_tick[y]) {
+          if (g.tick % 2 == 0) {
             SDL_RenderDrawRect(render, &b);
           }
         } else {
@@ -79,6 +109,7 @@ void draw(cetris_game* g) {
       }
     }
   }
+  SDL_RenderPresent(render);
 }
 
 int main(void) {
@@ -114,7 +145,7 @@ int main(void) {
           }
       }
     }
-    draw(&g);
+    draw();
     SDL_Delay(1000 / 60);
   }
 
