@@ -12,7 +12,7 @@
 #define W 480
 #define H 640
 
-#define X_OFFSET 40
+#define X_OFFSET 60
 #define Y_OFFSET 30
 
 SDL_Renderer* render;
@@ -64,6 +64,21 @@ void setup() {
 void draw() {
   SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
   SDL_RenderClear(render);
+
+  SDL_Rect board = {X_OFFSET, Y_OFFSET, 250, 500};
+  SDL_SetRenderDrawColor(render, 240, 240, 240, 255);
+  SDL_RenderFillRect(render, &board);
+  SDL_RenderDrawRect(render, &board);
+
+  SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+  for (int x = 0; x < CETRIS_BOARD_X + 1; x++) {
+    int rx = X_OFFSET + 1 + (x * 25);
+    SDL_RenderDrawLine(render, rx, Y_OFFSET + 1, rx, Y_OFFSET + 500);
+  }
+  for (int y = 0; y < CETRIS_BOARD_Y - CETRIS_BOARD_VISABLE + 1; y++) {
+    int ry = Y_OFFSET + (y * 25);
+    SDL_RenderDrawLine(render, X_OFFSET + 1, ry, X_OFFSET + 250, ry);
+  }
 
   SDL_Rect b = {0, 0, 25, 25}; 
 
