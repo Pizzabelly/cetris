@@ -23,3 +23,7 @@ endif
 if get_option('gl-frontend') == true
   subdir('frontends/gl')
 endif
+
+if get_option('sdl-frontend') == true
+  subdir('frontends/sdl')
+endif
