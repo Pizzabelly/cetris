@@ -18,7 +18,18 @@
 #define CETRIS_BOARD_Y 40
 #define CETRIS_BOARD_VISABLE 20
 
+#define CETRIS_HI_RES 1
+
+#if CETRIS_HI_RES
+#define CETRIS_HZ 6000
+typedef float ctick;
+#else
 #define CETRIS_HZ 60
+typedef uint16_t ctick;
+#endif
+
+#define CETRIS_ENABLE_DAS 1
+
 #define CETRIS_DROP_PERIOD 2
 #define CETRIS_NEXT_PIECE_DELAY 40
 #define CETRIS_LINE_CLEAR_DELAY 40
@@ -77,37 +88,61 @@ typedef enum {
 } input_t;
 
 typedef struct {
-  /* playfield represented by a 2d array */
+#if CETRIS_ENABLE_DAS
+  ctick das_arr; 
+  ctick das_das;
+#endif
+
+  ctick drop_period;
+  ctick next_piece_delay;
+  ctick line_delay_clear;
+  ctick lock_delay;
+  
+  bool wait_on_clear;
+} cetris_config;
+
+typedef struct {
+  // playfield represented by a 2d array
   uint8_t board[CETRIS_BOARD_X][CETRIS_BOARD_Y];
   int8_t highest_line;
 
-  /* constant queue of all 7 possible tetrimino */
+  // constant queue of all 7 possible tetrimino
   uint8_t piece_queue[7];
 
-  /* current tetrimino */
+  // current tetrimino
   tetrimino current;
   tetrimino held;
   bool piece_held;
   uint8_t current_index;
 
-  /* internal game tick */
-  uint16_t tick;
-  uint16_t next_drop_tick;
-  uint16_t next_piece_tick;
-  uint16_t down_move_tick;
-  uint16_t line_remove_tick[CETRIS_BOARD_Y];
+  // internal game tick
+  ctick tick;
+  ctick next_drop_tick;
+  ctick next_piece_tick;
+  ctick down_move_tick;
+  ctick line_remove_tick[CETRIS_BOARD_Y];
 
-  /* progress trackers */
+#if CETRIS_ENABLE_DAS
+  ctick das_wait;
+  ctick next_das_move;
+  uint8_t das_move;
+  uint8_t held_moves[8];
+#endif
+
+  // progress trackers 
   uint8_t lines;
   uint8_t level;
   bool game_over;
 
-  /* scoring flags */
+  // scoring flags
   bool tspin;
   bool mini_tspin;
 
-  /* score counter  */
+  // score counter
   uint16_t score;
+  
+  // config
+  cetris_config config;
 } cetris_game;
 
 const piece_matrix default_matrices[7] = {
@@ -211,25 +246,6 @@ static int check_matrix(cetris_game *g, piece_matrix *m) {
   return 1;
 }
 
-static void set_matrix(cetris_game *g, piece_matrix *m) {
-  for (int y = 0; y < 4; y++) {
-    for (int x = 0; x < 4; x++) {
-      if (((*m)[y]>>(3 - x))&1) {
-        vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
-        if (r.y >= 0) {
-          if (!(g->board[r.x][r.y] & SLOT_OCCUPIED)) {
-            g->board[r.x][r.y] |= SLOT_OCCUPIED;
-            g->board[r.x][r.y] |= g->current.t << 5;
-          }
-        }
-        if (g->current.ghost_y + y >= 0)
-          if (r.y != (g->current.ghost_y + y))
-            g->board[r.x][g->current.ghost_y + y] |= SLOT_GHOST;
-      }
-    }
-  }
-}
-
 // TODO: hard score
 static void add_score(cetris_game *g, int lines) {
   if (!g->tspin && !g->mini_tspin) {
@@ -292,9 +308,13 @@ static void make_ghosts(cetris_game *g) {
   g->current.pos.y = orig_y;
 }
 
-static void move_current(cetris_game *g, input_t move) {
+static void move_current(cetris_game *g, uint8_t move) {
   if (g->game_over || g->next_piece_tick)
     return;
+
+#if CETRIS_ENABLE_DAS
+  if (move == USER_DOWN) return;
+#endif
 
   g->current.pos.y += basic_movements[move].y;
   g->current.pos.x += basic_movements[move].x;
@@ -305,7 +325,7 @@ static void move_current(cetris_game *g, input_t move) {
     g->current.pos.x -= basic_movements[move].x;
 
     if (move == DOWN && check == -1 && !g->current.lock_tick) {
-      g->current.lock_tick = g->tick + CETRIS_LOCK_DELAY;
+      g->current.lock_tick = g->tick + g->config.lock_delay;
     }
   } else {
     if (move == USER_DOWN)
@@ -477,29 +497,37 @@ void update_board(cetris_game *g) {
         clear_line = false;
       }
     }
-    // remove tick only tracked on first block of line
-    if (g->line_remove_tick[y] && g->line_remove_tick[y] <= g->tick) {
-      g->line_remove_tick[y] = 0;
+
+    if (g->config.wait_on_clear) {
+      // remove tick only tracked on first block of line
+      if (g->line_remove_tick[y] && g->line_remove_tick[y] <= g->tick) {
+        g->line_remove_tick[y] = 0;
+        for (int s = y - 1; s >= 0; s--) {
+          for (int x = 0; x < CETRIS_BOARD_X; x++) {
+            g->board[x][s + 1] = g->board[x][s];
+          }
+        }
+      }
+      if (clear_line) {
+        g->line_remove_tick[y] = g->tick + g->config.line_delay_clear;
+        lines_cleared++;
+      }
+    } else if (clear_line) {
       for (int s = y - 1; s >= 0; s--) {
         for (int x = 0; x < CETRIS_BOARD_X; x++) {
           g->board[x][s + 1] = g->board[x][s];
         }
       }
     }
-    if (clear_line) {
-      g->line_remove_tick[y] = g->tick + CETRIS_LINE_CLEAR_DELAY;
-      lines_cleared++;
-    }
   }
 
   make_ghosts(g);
-  //set_matrix(g, &g->current.m);
 
   assert(lines_cleared <= 4);
 
   if (g->current.locked && !g->next_piece_tick) {
     if (lines_cleared > 0) {
-      g->next_piece_tick = g->tick + CETRIS_NEXT_PIECE_DELAY;
+      g->next_piece_tick = g->tick + g->config.next_piece_delay;
     } else {
       next_piece(g);
     }
@@ -528,7 +556,39 @@ CETRIS_EXPORT void hold_piece(cetris_game *g) {
   update_board(g);
 }
 
-CETRIS_EXPORT void move_piece(cetris_game *g, input_t move) {
+#if CETRIS_ENABLE_DAS
+CETRIS_EXPORT void unhold_piece(cetris_game* g, input_t move) {
+  if (g->das_move == move) {
+    if (move == LEFT && g->held_moves[RIGHT]) {
+      g->das_move = RIGHT;
+      g->das_wait = g->tick + g->config.das_das;
+    } else if (move == RIGHT && g->held_moves[LEFT]) {
+      g->das_move = LEFT;
+      g->das_wait = g->tick + g->config.das_das;
+    } else {
+      g->das_wait = 0;
+    }
+    g->next_das_move = 0;
+  }
+  g->held_moves[move] = 0;
+}
+#endif
+
+CETRIS_EXPORT void move_piece(cetris_game *g, uint8_t move) {
+#if CETRIS_ENABLE_DAS
+  if (g->held_moves[move]) return;
+  if (move == LEFT || move == RIGHT) {
+    if ((move != g->das_move) || !g->das_wait) {
+      g->das_move = move;
+      g->das_wait = g->tick + g->config.das_das;
+      g->next_das_move = 0;
+    }
+  }
+  if (move == USER_DOWN) 
+    g->next_drop_tick = g->tick + g->config.drop_period;
+  g->held_moves[move] = 1;
+#endif
+
   switch (move) {
   case LEFT:
   case RIGHT:
@@ -546,6 +606,7 @@ CETRIS_EXPORT void move_piece(cetris_game *g, input_t move) {
     rotate_piece(g, 0);
     break;
   }
+
 }
 
 CETRIS_EXPORT void init_game(cetris_game *g) {
@@ -573,8 +634,12 @@ CETRIS_EXPORT void init_game(cetris_game *g) {
 CETRIS_EXPORT void update_game_tick(cetris_game *g) {
   if (g->game_over)
     return;
-
+  
+#if CETRIS_HI_RES
+  g->tick += .01f;
+#else
   g->tick++;
+#endif
 
   if (g->next_piece_tick && g->tick >= g->next_piece_tick) {
     next_piece(g);
@@ -584,16 +649,21 @@ CETRIS_EXPORT void update_game_tick(cetris_game *g) {
     return;
 
   bool did_move = false;
-  if (g->tick >= g->next_drop_tick || !g->next_drop_tick) {
-    if (g->next_drop_tick) {
-      move_current(g, DOWN);
-      did_move = true;
-    }
+  if (g->next_drop_tick && g->tick >= g->next_drop_tick) {
+    move_current(g, DOWN);
+    g->next_drop_tick = 0;
+    did_move = true;
+  }
 
-    if (g->level <= 20) {
-      g->next_drop_tick = g->tick + level_drop_delay[g->level - 1];
+  if (!g->next_drop_tick) {
+    if (g->held_moves[USER_DOWN]) {
+      g->next_drop_tick = g->tick + g->config.drop_period;
     } else {
-      g->next_drop_tick = g->tick + level_drop_delay[19];
+      if (g->level <= 20) {
+        g->next_drop_tick = g->tick + level_drop_delay[g->level - 1];
+      } else {
+        g->next_drop_tick = g->tick + level_drop_delay[19];
+      }
     }
   }
 
@@ -609,6 +679,15 @@ CETRIS_EXPORT void update_game_tick(cetris_game *g) {
     }
     g->current.lock_tick = 0;
   }
+
+#if CETRIS_ENABLE_DAS
+  if (g->next_das_move && g->tick >= g->next_das_move) {
+    g->next_das_move = g->tick + g->config.das_arr;
+    move_current(g, g->das_move);
+  } else if (!g->next_das_move && g->das_wait && g->tick >= g->das_wait) {
+    g->next_das_move = g->tick + g->config.das_arr;
+  }
+#endif
 
   if (did_move) update_board(g);
 }

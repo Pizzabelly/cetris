@@ -4,7 +4,7 @@ project('cetris', 'c',
 
 compiler = meson.get_compiler('c')
 
-cetris_inc = include_directories('lib')
+cetris_inc = include_directories(['lib', 'ini'])
 
 if get_option('debug') == true 
   if host_machine.system() == 'windows'
