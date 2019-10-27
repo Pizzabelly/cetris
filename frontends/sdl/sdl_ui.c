@@ -1,11 +1,19 @@
 #define SDL_MAIN_HANDLED
+#ifdef _WIN32
+#include <SDL.h>
+#include <windows.h>
+#include <profileapi.h>
+#include <SDL_ttf.h>
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <pthread.h>
+#include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
+
 #include <time.h>
 
 #include <cetris.h>
@@ -21,6 +29,8 @@
 
 SDL_Renderer* render;
 TTF_Font* font;
+SDL_Window *window;
+SDL_Surface *screen;
 
 cetris_game g;
 
@@ -38,19 +48,27 @@ uint8_t colors[8][3] = {
 */
 
 uint8_t colors[7][3] = {
-  {174,198,207}, // Aqua
-  {170,221,119},  // Olive
-  {177,156,217},  // Purple
-  {255,209,220},  // Fuchsia
-  {255,179,71},  // Orange
-  {119,158,203},     // Navy
-  {253,253,150}    // Yellow 
+  {253,253,150},    // Yellow
+  {174,198,207},   // Aqua
+  {255,105,97},  // Red
+  {170,221,119},   // Olive
+  {255,179,71},    // Orange
+  {119,158,203},   // Navy
+  {177,156,217}    // Purple   
 };
 
 #ifdef _WIN32
 DWORD WINAPI game_loop(void* data) {
+  LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
+  LARGE_INTEGER Frequency;
+  LONGLONG nsec = (LONGLONG)(10000000L/CETRIS_HZ);
   while(1) {
-    Sleep((1.0/60.0) * 1000.0);
+    ElapsedMicroseconds.QuadPart = 0;
+    QueryPerformanceCounter(&StartingTime);
+    while (ElapsedMicroseconds.QuadPart <= nsec) {
+        QueryPerformanceCounter(&EndingTime); 
+	ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
+    }
     update_game_tick(&g);
   }
   return 0;
@@ -68,17 +86,36 @@ void *game_loop(void) {
 
 void setup() {
   SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO);
-  SDL_Window* win = SDL_CreateWindow("cetris", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, W, H, SDL_WINDOW_SHOWN);
-  render = SDL_CreateRenderer(win, -1, SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_ACCELERATED);
+  window = SDL_CreateWindow("cetris", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, W, H, SDL_WINDOW_SHOWN);
+  screen = SDL_GetWindowSurface(window);
+  render = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_ACCELERATED);
   SDL_RenderSetLogicalSize(render, W, H);
   if (!render) exit(fprintf(stderr, "err: could not create SDL renderer\n")); 
   SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
 
-  //TTF_Init();
-  //font = TTF_OpenFont("LiberationMono-Regular.ttf", 18);
+  TTF_Init();
+  font = TTF_OpenFont("LiberationMono-Regular.ttf", 18);
+}
+
+void draw_text(char* string, int x, int y) {
+  SDL_Color black = {0, 0, 0, 255};
+  SDL_Surface* surface = TTF_RenderText_Solid(font, string, black);
+  SDL_Rect message;
+  message.x = x;
+  message.y = y;
+  message.w = surface->w;
+  message.h = surface->h;
+  SDL_Texture* tex = SDL_CreateTextureFromSurface(render, surface); 
+  
+  SDL_RenderCopy(render, tex, NULL, &message);
+  SDL_DestroyTexture(tex);
+  SDL_FreeSurface(surface);
 }
 
 void draw() {
+  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
+  SDL_SetRenderTarget(render, m);
+
   SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
   SDL_RenderClear(render);
 
@@ -122,7 +159,7 @@ void draw() {
         w.y = b.y - 1;
         SDL_RenderDrawRect(render, &w);
   
-        SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 180);
+        SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 160);
         SDL_RenderFillRect(render, &b);
         SDL_RenderDrawRect(render, &b);
 
@@ -159,6 +196,16 @@ void draw() {
     }
   }
 
+  long double time = g.tick / 60.0f;
+  char *buf = malloc(200);
+  sprintf(buf, "%.18Lf", time);
+  draw_text(buf, 20, 20);
+  free(buf);
+
+  SDL_SetRenderTarget(render, NULL);
+  SDL_Point center = {W / 2, H / 2};
+  SDL_RenderCopyEx(render, m, NULL, NULL, 0, &center, SDL_FLIP_NONE); 
+
   SDL_RenderPresent(render);
 }
 
@@ -180,6 +227,7 @@ int main(void) {
   g.config.next_piece_delay = atoi(get_ini_value(&p, "game", "next_piece_delay"));
   g.config.lock_delay = atoi(get_ini_value(&p, "game", "lock_delay"));
   g.config.wait_on_clear = atoi(get_ini_value(&p, "game", "wait_on_clear"));
+  g.config.line_delay_clear = atoi(get_ini_value(&p, "game", "line_clear_delay"));
 
 #ifdef _WIN32
   HANDLE thread = CreateThread(NULL, 0, game_loop, NULL, 0, NULL);

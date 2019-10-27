@@ -518,6 +518,7 @@ void update_board(cetris_game *g) {
           g->board[x][s + 1] = g->board[x][s];
         }
       }
+      lines_cleared++;
     }
   }
 
