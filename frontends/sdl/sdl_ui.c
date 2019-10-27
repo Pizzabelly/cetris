@@ -19,7 +19,7 @@
 #include <cetris.h>
 #include <ini.h>
 
-#define W 480
+#define W 570
 #define H 640
 
 #define BLOCK_SIZE 25
@@ -33,19 +33,6 @@ SDL_Window *window;
 SDL_Surface *screen;
 
 cetris_game g;
-
-/*
-uint8_t colors[8][3] = {
-  {0, 0, 0},     // Black
-  {127,219,255}, // Aqua
-  {61,153,112},  // Olive
-  {177,13,201},  // Purple
-  {240,18,190},  // Fuchsia
-  {255,133,27},  // Orange
-  {0,31,63},     // Navy
-  {255,220,0}    // Yellow 
-};
-*/
 
 uint8_t colors[7][3] = {
   {253,253,150},    // Yellow
@@ -120,9 +107,15 @@ void draw() {
   SDL_RenderClear(render);
 
   SDL_Rect board = {X_OFFSET, Y_OFFSET, 250, 500};
+  SDL_Rect queue = {W - (W / 4), Y_OFFSET, (BLOCK_SIZE * 4) + 20, BLOCK_SIZE * 5 * 3};
+  SDL_Rect hold = {30, Y_OFFSET, BLOCK_SIZE * 4, BLOCK_SIZE * 4};
   SDL_SetRenderDrawColor(render, 235, 235, 235, 255);
   SDL_RenderFillRect(render, &board);
+  SDL_RenderFillRect(render, &queue);
+  SDL_RenderFillRect(render, &hold);
   SDL_RenderDrawRect(render, &board);
+  SDL_RenderDrawRect(render, &queue);
+  SDL_RenderDrawRect(render, &hold);
 
   SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
   for (int x = 0; x < CETRIS_BOARD_X + 1; x++) {
@@ -164,9 +157,63 @@ void draw() {
         SDL_RenderDrawRect(render, &b);
 
       }
-      //if ((default_matrices[game.piece_queue[g.current_index]][y]>>(3 - x))&1) {
-      //  mvaddstr(6 + y, (x * 2) + 36, BLOCK);
-      //}
+
+      if (g.piece_held) {
+        if ((g.held.m[y]>>(3 - x))&1) {
+          b.x = 40 + ((x) * BLOCK_SIZE);
+          b.y = Y_OFFSET + ((y) * BLOCK_SIZE);
+          if (g.held.t == MINO_I) {
+            b.x -= 10;
+            b.y += 10;
+          }
+          if (g.held.t == MINO_O) b.x -= 10;
+
+          uint8_t (*color)[3] = &(colors[g.held.t]);
+          SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
+    
+          SDL_RenderFillRect(render, &b);
+          SDL_RenderDrawRect(render, &b);
+
+          SDL_SetRenderDrawColor(render, 240, 240, 240, 255);
+          w.y = b.y - 1;
+          w.x = b.x - 1;
+          SDL_RenderDrawRect(render, &w);
+        }
+      }
+
+      for (int i = 0; i < 5; i++) {
+        int index = (g.current_index + i);
+
+        uint8_t mino;
+        if (index <= 6) {
+          mino = g.piece_queue[index];
+        } else {
+          index = index % 7;
+          mino = g.next_queue[index];
+        }
+
+        uint8_t (*color)[3] = &(colors[mino]);
+        uint8_t res = (default_matrices[mino][y]>>(3 - x))&1;
+
+        if (res) {
+          b.x = 20 + (W - (W / 4)) + (x * BLOCK_SIZE);
+          b.y = (Y_OFFSET - 10) + (BLOCK_SIZE * i * 3) + (y * BLOCK_SIZE);
+          if (mino == MINO_I) {
+            b.x -= 10;
+            b.y += 10;
+          }
+          if (mino == MINO_O) b.x -= 10;
+          SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
+  
+          SDL_RenderFillRect(render, &b);
+          SDL_RenderDrawRect(render, &b);
+
+          SDL_SetRenderDrawColor(render, 240, 240, 240, 255);
+          w.y = b.y - 1;
+          w.x = b.x - 1;
+          SDL_RenderDrawRect(render, &w);
+        }
+      }
     }
   }
 
@@ -203,9 +250,11 @@ void draw() {
   free(buf);
 
   SDL_SetRenderTarget(render, NULL);
+
   SDL_Point center = {W / 2, H / 2};
   SDL_RenderCopyEx(render, m, NULL, NULL, 0, &center, SDL_FLIP_NONE); 
 
+  SDL_DestroyTexture(m);
   SDL_RenderPresent(render);
 }
 

@@ -108,12 +108,13 @@ typedef struct {
 
   // constant queue of all 7 possible tetrimino
   uint8_t piece_queue[7];
+  uint8_t next_queue[7];
+  uint8_t current_index;
 
   // current tetrimino
   tetrimino current;
   tetrimino held;
   bool piece_held;
-  uint8_t current_index;
 
   // internal game tick
   ctick tick;
@@ -212,18 +213,12 @@ static void set_piece(uint8_t type, tetrimino* mino) {
   mino->pos.y = (type == MINO_I) ? 17 : 16;
 }
 
-static void init_queue(cetris_game *g) {
-  for (int i = 0; i < 7; i++) {
-    g->piece_queue[i] = i;
-  }
-}
-
 static void shuffle_queue(cetris_game *g) {
   for (int i = 0; i < 7; i++) {
-    int rand_index = rand() % 7;
-    uint8_t tmp = g->piece_queue[i];
-    g->piece_queue[i] = g->piece_queue[rand_index];
-    g->piece_queue[rand_index] = tmp;
+    uint8_t rand_index = rand() % 7;
+    uint8_t tmp = g->next_queue[i];
+    g->next_queue[i] = g->next_queue[rand_index];
+    g->next_queue[rand_index] = tmp;
   }
 }
 
@@ -346,13 +341,14 @@ static void next_piece(cetris_game *g) {
   if (check_matrix(g, &g->current.m) <= 0) {
     g->game_over = true;
   }
-  g->current_index++;
 
   if (!g->game_over) {
     move_current(g, DOWN);
   }
-
-  if (g->current_index >= 7) {
+  
+  g->current_index++;
+  if (g->current_index == 7) {
+    memcpy(&g->piece_queue, &g->next_queue, sizeof(g->piece_queue));
     g->current_index = 0;
     shuffle_queue(g);
   }
@@ -626,7 +622,12 @@ CETRIS_EXPORT void init_game(cetris_game *g) {
   g->level = CETRIS_STARTING_LEVEL;
   g->highest_line = CETRIS_BOARD_Y;
 
-  init_queue(g);
+  for (int i = 0; i < 7; i++) {
+    g->next_queue[i] = i;
+  }
+
+  shuffle_queue(g);
+  memcpy(&g->piece_queue, &g->next_queue, sizeof(g->piece_queue));
   shuffle_queue(g);
 
   next_piece(g);
