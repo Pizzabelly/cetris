@@ -57,7 +57,6 @@ enum {
 
 enum {
   SLOT_OCCUPIED = 1,
-  SLOT_GHOST =    1 << 1,
 };
 
 enum { 
@@ -106,7 +105,7 @@ typedef struct {
   uint8_t board[CETRIS_BOARD_X][CETRIS_BOARD_Y];
   int8_t highest_line;
 
-  // constant queue of all 7 possible tetrimino
+  // queue of all 7 possible tetrimino
   uint8_t piece_queue[7];
   uint8_t next_queue[7];
   uint8_t current_index;
@@ -197,7 +196,7 @@ static void update_board(cetris_game *g);
 
 CETRIS_EXPORT void update_game_tick(cetris_game *g);
 CETRIS_EXPORT void hold_piece(cetris_game *g);
-CETRIS_EXPORT void init_game(cetris_game *g);
+CETRIS_EXPORT void init_game(cetris_game *g, cetris_config *c);
 CETRIS_EXPORT void hold_piece(cetris_game *g);
 
 static void set_piece(uint8_t type, tetrimino* mino) {
