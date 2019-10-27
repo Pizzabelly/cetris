@@ -261,22 +261,26 @@ void draw() {
 int main(void) {
   setup();
 
-  init_game(&g);
+
   
   ini_parser p;
   load_ini_file(&p, "config.ini");
+
+  cetris_config config;
   
   int das = atoi(get_ini_value(&p, "das", "das"));
-  g.config.das_das = das * .06f;
+  config.das_das = das * .06f;
 
   int arr = atoi(get_ini_value(&p, "das", "arr"));
-  g.config.das_arr = arr * .06f;
+  config.das_arr = arr * .06f;
 
-  g.config.drop_period = atoi(get_ini_value(&p, "game", "drop_delay")) * .06f;
-  g.config.next_piece_delay = atoi(get_ini_value(&p, "game", "next_piece_delay"));
-  g.config.lock_delay = atoi(get_ini_value(&p, "game", "lock_delay"));
-  g.config.wait_on_clear = atoi(get_ini_value(&p, "game", "wait_on_clear"));
-  g.config.line_delay_clear = atoi(get_ini_value(&p, "game", "line_clear_delay"));
+  config.drop_period = atoi(get_ini_value(&p, "game", "drop_delay")) * .06f;
+  config.next_piece_delay = atoi(get_ini_value(&p, "game", "next_piece_delay"));
+  config.lock_delay = atoi(get_ini_value(&p, "game", "lock_delay"));
+  config.wait_on_clear = atoi(get_ini_value(&p, "game", "wait_on_clear"));
+  config.line_delay_clear = atoi(get_ini_value(&p, "game", "line_clear_delay"));
+
+  init_game(&g, &config);
 
 #ifdef _WIN32
   HANDLE thread = CreateThread(NULL, 0, game_loop, NULL, 0, NULL);
@@ -309,6 +313,8 @@ int main(void) {
               move_piece(&g, ROTATE_CW); break;
             case 'z':
               move_piece(&g, ROTATE_CCW); break;
+            case 'r':
+              init_game(&g, &config); break;
           }
           break;
         case SDL_KEYUP:

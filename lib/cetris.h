@@ -534,6 +534,7 @@ void update_board(cetris_game *g) {
     add_score(g, lines_cleared);
     if (lines_cleared > 0) {
       g->lines += lines_cleared;
+      if (g->lines >= 20) g->game_over = true;
       if (g->lines >= (g->level * 10))
         g->level++;
     }
@@ -606,7 +607,7 @@ CETRIS_EXPORT void move_piece(cetris_game *g, uint8_t move) {
 
 }
 
-CETRIS_EXPORT void init_game(cetris_game *g) {
+CETRIS_EXPORT void init_game(cetris_game *g, cetris_config* c) {
 
   /* check for config errors */
   assert(CETRIS_NEXT_PIECE_DELAY >= CETRIS_LINE_CLEAR_DELAY);
@@ -618,6 +619,7 @@ CETRIS_EXPORT void init_game(cetris_game *g) {
 #endif
 
   memset(g, 0, sizeof(cetris_game));
+  memcpy(&g->config, c, sizeof(cetris_config));
 
   g->level = CETRIS_STARTING_LEVEL;
   g->highest_line = CETRIS_BOARD_Y;
