@@ -78,10 +78,15 @@ DWORD WINAPI game_loop(void* data) {
 }
 #else
 void *game_loop(void) {
-  long nsec = (long)(1000000000L/CETRIS_HZ);
+  timer = 0;
+  long nsec = 1000;
   while(1) {
+    if (timer % 1000 == 0) {
+      g.tick++;
+      update_game_tick(&g);
+    }
     nanosleep((const struct timespec[]){{0, nsec}}, NULL);
-    update_game_tick(&g);
+    timer++;
   }
   return 0;
 }
@@ -91,14 +96,14 @@ void setup() {
   SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO);
   window = SDL_CreateWindow("cetris", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, W, H, SDL_WINDOW_SHOWN);
   screen = SDL_GetWindowSurface(window);
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+  //SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
   render = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_ACCELERATED);
   SDL_RenderSetLogicalSize(render, W, H);
   if (!render) exit(fprintf(stderr, "err: could not create SDL renderer\n")); 
 
   TTF_Init();
   font = TTF_OpenFont("OpenSans-Regular.ttf", 20);
-  TTF_SetFontHinting(font, TTF_HINTING_MONO);
+  //TTF_SetFontHinting(font, TTF_HINTING_MONO);
 }
 
 void draw_text(char* string, int x, int y) {
@@ -117,15 +122,15 @@ void draw_text(char* string, int x, int y) {
 
 void load_colors() {
 	if (dark_mode) {
-		main_color = (SDL_Color){100, 100, 100, 255};
-		off =  (SDL_Color){50, 50, 50, 255};
-		text = (SDL_Color){240, 240, 240, 255};
-  		SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_ADD);
+    main_color = (SDL_Color){100, 100, 100, 255};
+    off =  (SDL_Color){50, 50, 50, 255};
+    text = (SDL_Color){240, 240, 240, 255};
+  	SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_ADD);
 	} else {
 		main_color = (SDL_Color){255, 255, 255, 255};
 		off =  (SDL_Color){235, 235, 235, 255};
 		text = (SDL_Color){10, 10, 10, 255};
-  		SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
+  	SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
 	}
 }
 
@@ -298,7 +303,7 @@ void draw() {
   SDL_DestroyTexture(m);
 
   if (count_down > 0) {
-	  count_down-=(1.0/144.0);
+	  count_down-=(1.0/60.0);
   }
 }
 
@@ -398,7 +403,7 @@ int main(void) {
 	    game_running = true;
     }
     SDL_RenderPresent(render);
-    SDL_Delay(1000 / 144);
+    SDL_Delay(1000 / 60);
   }
 
 }
