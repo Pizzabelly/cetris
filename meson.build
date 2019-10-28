@@ -12,7 +12,11 @@ if get_option('debug') == true
   else 
     add_global_arguments('-DBUILD_TESTS', language : 'c')
   endif
+endif
 
+subdir('lib')
+
+if get_option('debug') == true 
   subdir('test')
 endif
 

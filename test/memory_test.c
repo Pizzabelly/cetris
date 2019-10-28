@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "cetris.h"
+#include <cetris.h>
 
 int main(void) {
   cetris_game game;

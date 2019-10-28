@@ -14,6 +14,8 @@ change some enums and make piece_matrix samller: 606 bytes
 
 optimize piece_queue: 530 bytes
 
+add das: 936 bytes
+
 000 = 0
 001 = 1
 010 = 2

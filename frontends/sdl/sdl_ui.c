@@ -1,14 +1,10 @@
 #define SDL_MAIN_HANDLED
 #ifdef _WIN32
 #include <SDL.h>
-#include <windows.h>
-#include <profileapi.h>
 #include <SDL_ttf.h>
 #else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include <pthread.h>
-#include <unistd.h>
 #endif
 #include <math.h>
 #include <stdlib.h>
@@ -18,6 +14,8 @@
 #include <time.h>
 
 #include <cetris.h>
+#include <timer.h>
+#include <rules.h>
 #include <ini.h>
 
 #define W 570
@@ -29,9 +27,13 @@
 #define Y_OFFSET (H/2) - (BLOCK_SIZE * 10)
 
 SDL_Renderer* render;
-TTF_Font* font;
+TTF_Font* normal_font;
+TTF_Font* big_font;
 SDL_Window *window;
 SDL_Surface *screen;
+
+bool show_menu;
+int menu_index;
 
 bool dark_mode;
 SDL_Color main_color;
@@ -39,11 +41,17 @@ SDL_Color off;
 SDL_Color text;
 
 float count_down;
-bool game_running;
-
-long long timer;
 
 cetris_game g;
+
+typedef struct {
+  SDL_AudioSpec wav_spec;
+  uint32_t wav_length;
+  uint8_t *wav_buffer;
+} audio_clip;
+
+audio_clip clear_sound[4];
+SDL_AudioDeviceID audio_device;
 
 uint8_t colors[7][3] = {
   {253,253,150},    // Yellow
@@ -55,59 +63,38 @@ uint8_t colors[7][3] = {
   {177,156,217}    // Purple   
 };
 
-#ifdef _WIN32
-DWORD WINAPI game_loop(void* data) {
-  LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
-  LARGE_INTEGER Frequency;
-  QueryPerformanceFrequency(&Frequency);
-  QueryPerformanceCounter(&StartingTime);
-  while(1) {
-    if (!game_running) break;
-    QueryPerformanceCounter(&EndingTime); 
-    ElapsedMicroseconds.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
-    ElapsedMicroseconds.QuadPart *= 1000000;
-    ElapsedMicroseconds.QuadPart /= Frequency.QuadPart;
-    timer = ElapsedMicroseconds.QuadPart;
-    g.tick = ElapsedMicroseconds.QuadPart / 1000;
-    if (!update_game_tick(&g)) {
-	    break;
-    }
-    Sleep(1);
-  }
-  return 0;
-}
-#else
-void *game_loop(void) {
-  timer = 0;
-  long nsec = 1000;
-  while(1) {
-    if (timer % 1000 == 0) {
-      g.tick++;
-      update_game_tick(&g);
-    }
-    nanosleep((const struct timespec[]){{0, nsec}}, NULL);
-    timer++;
-  }
-  return 0;
-}
-#endif
-
 void setup() {
   SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO);
   window = SDL_CreateWindow("cetris", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, W, H, SDL_WINDOW_SHOWN);
   screen = SDL_GetWindowSurface(window);
-  //SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
   render = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_ACCELERATED);
   SDL_RenderSetLogicalSize(render, W, H);
   if (!render) exit(fprintf(stderr, "err: could not create SDL renderer\n")); 
 
   TTF_Init();
-  font = TTF_OpenFont("OpenSans-Regular.ttf", 20);
-  //TTF_SetFontHinting(font, TTF_HINTING_MONO);
+  normal_font = TTF_OpenFont("OpenSans-Regular.ttf", 20);
+  big_font = TTF_OpenFont("OpenSans-Regular.ttf", 30);
+  TTF_SetFontHinting(normal_font, TTF_HINTING_MONO);
+  TTF_SetFontHinting(big_font, TTF_HINTING_MONO);
+
+  for (int i = 0; i < 4; i++) {
+    char name[25];
+    sprintf(name, "audio/yea_%i.wav", i);
+    SDL_LoadWAV(name, &(clear_sound[i].wav_spec), &(clear_sound[i].wav_buffer), &(clear_sound[i].wav_length));
+  }
+  audio_device = SDL_OpenAudioDevice(NULL, 0, &(clear_sound[0].wav_spec), NULL, 0);
+  if (audio_device == 0) printf("failed to open audio device\n");
 }
 
-void draw_text(char* string, int x, int y) {
-  SDL_Surface* surface = TTF_RenderText_Solid(font, string, text);
+void draw_text(char* string, int x, int y, bool big) {
+  SDL_Surface *surface;
+  if (big) {
+    surface = TTF_RenderText_Solid(big_font, string, text);
+  } else {
+    surface = TTF_RenderText_Solid(normal_font, string, text);
+  }
+
   SDL_Rect message;
   message.x = x;
   message.y = y;
@@ -134,8 +121,33 @@ void load_colors() {
 	}
 }
 
+void draw_menu() {
+  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
+  SDL_SetRenderTarget(render, m);
 
-void draw() {
+  SDL_SetRenderDrawColor(render, main_color.r, main_color.g, main_color.b, 255);
+  SDL_RenderClear(render);
+  
+  if (menu_index == 0) {
+    draw_text("> Play <", 80, (H / 2) - 30, true);
+  } else {
+    draw_text("Play", 80, (H / 2) - 30, true);
+  }
+  if (menu_index == 1) {
+    draw_text("> Config <", 80, (H / 2), true);
+  } else {
+    draw_text("Config", 80, (H / 2), true);
+  }
+
+  SDL_SetRenderTarget(render, NULL);
+
+  SDL_Point center = {W / 2, H / 2};
+  SDL_RenderCopyEx(render, m, NULL, NULL, 0, &center, SDL_FLIP_NONE); 
+
+  SDL_DestroyTexture(m);
+}
+
+void draw_game() {
   SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
   SDL_SetRenderTarget(render, m);
   
@@ -153,12 +165,16 @@ void draw() {
   SDL_RenderDrawRect(render, &queue);
   SDL_RenderDrawRect(render, &hold);
 
+  int BOARD_Y = g.config.board_y;
+  int BOARD_X = g.config.board_x;
+  int BOARD_VISIBLE = g.config.board_y - g.config.board_visible;
+
   SDL_SetRenderDrawColor(render, main_color.r, main_color.g, main_color.b, 255);
-  for (int x = 0; x < CETRIS_BOARD_X + 1; x++) {
+  for (int x = 0; x < BOARD_X + 1; x++) {
     int rx = X_OFFSET + 1 + (x * BLOCK_SIZE);
     SDL_RenderDrawLine(render, rx, Y_OFFSET + 1, rx, Y_OFFSET + 500);
   }
-  for (int y = 0; y < CETRIS_BOARD_Y - CETRIS_BOARD_VISABLE + 1; y++) {
+  for (int y = 0; y < BOARD_Y - BOARD_VISIBLE + 1; y++) {
     int ry = Y_OFFSET + (y * BLOCK_SIZE);
     SDL_RenderDrawLine(render, X_OFFSET + 1, ry, X_OFFSET + 250, ry);
   }
@@ -170,7 +186,7 @@ void draw() {
     for (int x = 0; x < 4; x++) {
       if ((g.current.m[y]>>(3 - x))&1) {
         b.x = X_OFFSET + ((x + g.current.pos.x) * BLOCK_SIZE) + 1;
-        b.y = (Y_OFFSET + ((y + g.current.pos.y) * BLOCK_SIZE)) - (CETRIS_BOARD_VISABLE * BLOCK_SIZE);
+        b.y = (Y_OFFSET + ((y + g.current.pos.y) * BLOCK_SIZE)) - (BOARD_VISIBLE * BLOCK_SIZE);
   
         uint8_t (*color)[3] = &(colors[g.current.t]);
         SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
@@ -183,7 +199,7 @@ void draw() {
         w.x = b.x - 1;
         SDL_RenderDrawRect(render, &w);
 
-        b.y = (Y_OFFSET + ((y + g.current.ghost_y) * BLOCK_SIZE)) - (CETRIS_BOARD_VISABLE * BLOCK_SIZE);
+        b.y = (Y_OFFSET + ((y + g.current.ghost_y) * BLOCK_SIZE)) - (BOARD_VISIBLE * BLOCK_SIZE);
 
         w.y = b.y - 1;
         SDL_RenderDrawRect(render, &w);
@@ -253,11 +269,11 @@ void draw() {
     }
   }
 
-  for (int x = 0; x < CETRIS_BOARD_X; x++) {
-    for (int y = g.highest_line; y < CETRIS_BOARD_Y; y++) {
+  for (int x = 0; x < BOARD_X; x++) {
+    for (int y = g.highest_line; y < BOARD_Y; y++) {
       if (g.board[x][y] & SLOT_OCCUPIED) {
         b.x = X_OFFSET + (x * BLOCK_SIZE) + 1;
-        b.y = (Y_OFFSET + (y * BLOCK_SIZE)) - (CETRIS_BOARD_VISABLE * BLOCK_SIZE);
+        b.y = (Y_OFFSET + (y * BLOCK_SIZE)) - (BOARD_VISIBLE * BLOCK_SIZE);
  
         if (g.line_remove_tick[y]) {
           if ((int)g.tick % 2 == 0) {
@@ -280,7 +296,7 @@ void draw() {
   }
 
   char *buf = malloc(200);
-  long double second = timer / 1000000.0f;
+  long double second = g.timer / 1000000.0f;
   if (second > 60.0f) {
     int minute = (int)(second / 60.0f);
     second -= (minute * 60.0f);
@@ -288,10 +304,10 @@ void draw() {
   } else {
     sprintf(buf, "%.6Lf", second);
   }
-  draw_text(buf, 20, H - 40);
+  draw_text(buf, 20, H - 40, false);
 
   sprintf(buf, "lines remaining: %i", 20 - g.lines);
-  draw_text(buf, 20, H - 60);
+  draw_text(buf, 20, H - 60, false);
 
   free(buf);
 
@@ -307,23 +323,13 @@ void draw() {
   }
 }
 
-void start_game() {
-  g.waiting = false;
-#ifdef _WIN32
-  HANDLE thread = CreateThread(NULL, 0, game_loop, NULL, 0, NULL);
-#else
-  pthread_t thread;
-  pthread_create(&thread, NULL, (void*)game_loop, (void*)0);
-#endif
-}
-
 int main(void) {
   setup();
 
   ini_parser p;
   load_ini_file(&p, "config.ini");
 
-  cetris_config config;
+  cetris_config config = tetris_ds_config;
   
   int das = atoi(get_ini_value(&p, "das", "das"));
   config.das_das = das;
@@ -331,78 +337,125 @@ int main(void) {
   int arr = atoi(get_ini_value(&p, "das", "arr"));
   config.das_arr = arr;
 
-  config.drop_period = atoi(get_ini_value(&p, "game", "drop_delay"));
-  config.next_piece_delay = atoi(get_ini_value(&p, "game", "next_piece_delay"));
-  config.lock_delay = atoi(get_ini_value(&p, "game", "lock_delay"));
-  config.force_lock = atoi(get_ini_value(&p, "game", "force_lock"));
-  config.wait_on_clear = atoi(get_ini_value(&p, "game", "wait_on_clear"));
-  config.line_delay_clear = atoi(get_ini_value(&p, "game", "line_clear_delay"));
+  config.win_condition = twenty_line_sprint;
+  config.levels = &tetris_worlds_levels[0];
+  config.wait_on_clear = 0;
 
-  dark_mode = atoi(get_ini_value(&p, "ui", "dark_mode"));
+  char* drop_delay = get_ini_value(&p, "game", "drop_delay");
+  if (drop_delay) config.drop_period = atoi(drop_delay);
+  
+  char* next_piece_delay = get_ini_value(&p, "game", "next_piece_delay");
+  if (next_piece_delay) config.next_piece_delay = atoi(next_piece_delay);
+
+  char* lock_delay = get_ini_value(&p, "game", "lock_delay");
+  if (lock_delay) config.lock_delay = atoi(lock_delay);
+
+  char* force_lock = get_ini_value(&p, "game", "force_lock");
+  if (force_lock) config.force_lock = atoi(force_lock);
+
+  char* wait_on_clear = get_ini_value(&p, "game", "wait_on_clear");
+  if (wait_on_clear) config.wait_on_clear = atoi(wait_on_clear);
+
+  char* line_delay_clear = get_ini_value(&p, "game", "line_clear_delay");
+  if (line_delay_clear) config.line_delay_clear = atoi(line_delay_clear);
+
+  char *dark = get_ini_value(&p, "ui", "dark_mode");
+  if (dark) dark_mode = atoi(dark);
+  else dark_mode = 0;
+
   load_colors();
-   
+  
+  show_menu = false;
+  menu_index = 0;
+
   count_down = 3;  
   init_game(&g, &config);
-  g.waiting = true;
    
   SDL_Event e;
   for(;;) {
     while(SDL_PollEvent(&e)) {
-      switch (e.type) {
-        case SDL_QUIT:
-          exit(0);
-        case SDL_KEYDOWN:
-          switch (e.key.keysym.sym) {
-            case SDLK_LEFT:
-              move_piece(&g, LEFT); break;
-            case SDLK_RIGHT:
-              move_piece(&g, RIGHT); break;
-            case SDLK_DOWN:
-              move_piece(&g, DOWN); break;
-            case SDLK_SPACE:
-              move_piece(&g, HARD_DROP); break;
-            case SDLK_UP:
-              move_piece(&g, ROTATE_CW); break;
-            case 'c':
-              hold_piece(&g); break;
-            case 'x':
-              move_piece(&g, ROTATE_CW); break;
-            case 'z':
-              move_piece(&g, ROTATE_CCW); break;
-            case 'r':
-	      game_running = false;
-	      init_game(&g, &config);
-  	      g.waiting = true;
-	      count_down = 3;
-	      break;
-          }
-          break;
-        case SDL_KEYUP:
-          switch (e.key.keysym.sym) {
-            case SDLK_LEFT:
-              unhold_piece(&g, LEFT); break;
-            case SDLK_RIGHT:
-              unhold_piece(&g, RIGHT); break;
-            case SDLK_DOWN:
-              unhold_piece(&g, DOWN); break;
-            case SDLK_SPACE:
-              unhold_piece(&g, HARD_DROP); break;
-            case SDLK_UP:
-              unhold_piece(&g, ROTATE_CW); break;
-            case 'x':
-              unhold_piece(&g, ROTATE_CW); break;
-            case 'z':
-              unhold_piece(&g, ROTATE_CCW); break;
-          }
+      if (show_menu) {
+        switch (e.type) {
+          case SDL_QUIT:
+            exit(0);
+          case SDL_KEYDOWN:
+            switch (e.key.keysym.sym) {
+              case SDLK_DOWN:
+                if (menu_index < 1) menu_index++;
+                break;
+              case SDLK_UP:
+                if (menu_index > 0) menu_index--;
+                break;
+            }
+        }
+      } else {
+        switch (e.type) {
+          case SDL_QUIT:
+            exit(0);
+          case SDL_KEYDOWN:
+            switch (e.key.keysym.sym) {
+              case SDLK_LEFT:
+                move_piece(&g, LEFT); break;
+              case SDLK_RIGHT:
+                move_piece(&g, RIGHT); break;
+              case SDLK_DOWN:
+                move_piece(&g, DOWN); break;
+              case SDLK_SPACE:
+                move_piece(&g, HARD_DROP); break;
+              case SDLK_UP:
+                move_piece(&g, ROTATE_CW); break;
+              case 'c':
+                hold_piece(&g); break;
+              case 'x':
+                move_piece(&g, ROTATE_CW); break;
+              case 'z':
+                move_piece(&g, ROTATE_CCW); break;
+              case 'r':
+                cetris_stop_game(&g);
+                count_down = 3;
+                break;
+            }
+            break;
+          case SDL_KEYUP:
+            switch (e.key.keysym.sym) {
+              case SDLK_LEFT:
+                unhold_move(&g, LEFT); break;
+              case SDLK_RIGHT:
+                unhold_move(&g, RIGHT); break;
+              case SDLK_DOWN:
+                unhold_move(&g, DOWN); break;
+              case SDLK_SPACE:
+                unhold_move(&g, HARD_DROP); break;
+              case SDLK_UP:
+                unhold_move(&g, ROTATE_CW); break;
+              case 'x':
+                unhold_move(&g, ROTATE_CW); break;
+              case 'z':
+                unhold_move(&g, ROTATE_CCW); break;
+            }
+        }
       }
     }
-    draw();
 
-    if (count_down < 0 && !game_running) {
-	    start_game();
-	    game_running = true;
+    if (show_menu) {
+      draw_menu();
+    } else {
+      draw_game();
+    }
+
+    if (count_down < 0 && g.waiting) {
+	    cetris_start_game(&g);
     }
     SDL_RenderPresent(render);
+
+    if (g.line_event) {
+      int index = g.line_combo - 1;
+      if (index > 4) index = 4;
+      int success = SDL_QueueAudio(audio_device, clear_sound[index].wav_buffer,  clear_sound[index].wav_length);
+      SDL_PauseAudioDevice(audio_device, 0);
+      g.line_event = false;
+    }
+
     SDL_Delay(1000 / 60);
   }
 

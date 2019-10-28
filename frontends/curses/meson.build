@@ -1,7 +1,7 @@
 src = ['curses_ui.c']
 
 inc = [cetris_inc]
-deps = []
+deps = [cetris]
 
 if host_machine.system() == 'windows'
   inc += include_directories('win')
@@ -13,6 +13,6 @@ else
 endif
 
 executable('cetris', src,
-           dependencies: deps,
-           include_directories: inc,
-           install: false)
+  dependencies: deps,
+  include_directories: inc,
+  install: false)

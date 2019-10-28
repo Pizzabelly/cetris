@@ -1,9 +1,7 @@
 src = ['sdl_ui.c']
 
+deps = [cetris]
 inc = [cetris_inc]
-
-threads = dependency('threads')
-deps = []
 
 if host_machine.system() == 'windows'
   deps += compiler.find_library('SDL2', dirs: meson.current_source_dir() + '/win/SDL2-2.0.10/lib/x64')
@@ -17,14 +15,14 @@ else
 endif
 
 configure_file(input: 'config.ini', 
-        output: 'config.ini',
-        copy: true, install: false)
+   output: 'config.ini',
+   copy: true, install: false)
 
 configure_file(input: 'OpenSans-Regular.ttf', 
-        output: 'OpenSans-Regular.ttf',
-        copy: true, install: false)
+   output: 'OpenSans-Regular.ttf',
+   copy: true, install: false)
 
 executable('cetris', src,
-    dependencies: deps,
-    include_directories: inc,
-    install: false)
+   dependencies: deps,
+   include_directories: inc,
+   install: false)
