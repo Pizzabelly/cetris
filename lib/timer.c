@@ -1,7 +1,7 @@
 #include <cetris.h>
 
 #ifdef _WIN32
-#include <window.h>
+#include <windows.h>
 
 #if CETRIS_HI_RES
 DWORD WINAPI cetris_game_loop(void* data) {

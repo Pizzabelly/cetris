@@ -18,52 +18,27 @@
 #include <rules.h>
 #include <ini.h>
 
-#define W 570
-#define H 640
+#include "cetris_sdl.h"
 
-#define BLOCK_SIZE 25
-
-#define X_OFFSET (W/2) - (BLOCK_SIZE * 5)
-#define Y_OFFSET (H/2) - (BLOCK_SIZE * 10)
+#define W 1280
+#define H 720
+#define FRAME_RATE 60
 
 SDL_Renderer* render;
-TTF_Font* normal_font;
-TTF_Font* big_font;
 SDL_Window *window;
 SDL_Surface *screen;
 
-bool show_menu;
-int menu_index;
-
-bool dark_mode;
-SDL_Color main_color;
-SDL_Color off;
-SDL_Color text;
-
-float count_down;
-
 cetris_game g;
 
-typedef struct {
-  SDL_AudioSpec wav_spec;
-  uint32_t wav_length;
-  uint8_t *wav_buffer;
-} audio_clip;
+game_board_t main_board;
 
-audio_clip clear_sound[4];
+int font_count;
+font_t fonts[10];
+
+audio_clip_t clear_sound[4];
 SDL_AudioDeviceID audio_device;
 
-uint8_t colors[7][3] = {
-  {253,253,150},    // Yellow
-  {174,198,207},   // Aqua
-  {255,105,97},  // Red
-  {170,221,119},   // Olive
-  {255,179,71},    // Orange
-  {119,158,203},   // Navy
-  {177,156,217}    // Purple   
-};
-
-void setup() {
+void setup_sdl() {
   SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO);
   window = SDL_CreateWindow("cetris", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, W, H, SDL_WINDOW_SHOWN);
   screen = SDL_GetWindowSurface(window);
@@ -73,27 +48,31 @@ void setup() {
   if (!render) exit(fprintf(stderr, "err: could not create SDL renderer\n")); 
 
   TTF_Init();
-  normal_font = TTF_OpenFont("OpenSans-Regular.ttf", 20);
-  big_font = TTF_OpenFont("OpenSans-Regular.ttf", 30);
-  TTF_SetFontHinting(normal_font, TTF_HINTING_MONO);
-  TTF_SetFontHinting(big_font, TTF_HINTING_MONO);
 
   for (int i = 0; i < 4; i++) {
     char name[25];
-    sprintf(name, "audio/yea_%i.wav", i);
+    sprintf(name, "data/yea_%i.wav", i);
     SDL_LoadWAV(name, &(clear_sound[i].wav_spec), &(clear_sound[i].wav_buffer), &(clear_sound[i].wav_length));
   }
   audio_device = SDL_OpenAudioDevice(NULL, 0, &(clear_sound[0].wav_spec), NULL, 0);
   if (audio_device == 0) printf("failed to open audio device\n");
 }
 
-void draw_text(char* string, int x, int y, bool big) {
-  SDL_Surface *surface;
-  if (big) {
-    surface = TTF_RenderText_Solid(big_font, string, text);
-  } else {
-    surface = TTF_RenderText_Solid(normal_font, string, text);
+TTF_Font* get_font(int size) {
+  for (int i = 0; i < font_count; i++) {
+    if (fonts[i].size == size) {
+      return fonts[i].font;
+    }
   }
+  fonts[font_count].font = TTF_OpenFont("data/OpenSans-Regular.ttf", size);
+  TTF_SetFontHinting(fonts[font_count].font, TTF_HINTING_MONO);
+  fonts[font_count].size = size;
+  return fonts[font_count++].font;
+}
+
+void draw_text(char* string, int x, int y, TTF_Font* font, SDL_Color color) {
+  SDL_Surface *surface;
+  surface = TTF_RenderText_Solid(font, string, color);
 
   SDL_Rect message;
   message.x = x;
@@ -107,194 +86,171 @@ void draw_text(char* string, int x, int y, bool big) {
   SDL_FreeSurface(surface);
 }
 
-void load_colors() {
-	if (dark_mode) {
-    main_color = (SDL_Color){100, 100, 100, 255};
-    off =  (SDL_Color){50, 50, 50, 255};
-    text = (SDL_Color){240, 240, 240, 255};
-  	SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_ADD);
-	} else {
-		main_color = (SDL_Color){255, 255, 255, 255};
-		off =  (SDL_Color){235, 235, 235, 255};
-		text = (SDL_Color){10, 10, 10, 255};
-  	SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
-	}
+void draw_block(int x, int y, int width, int height, SDL_Color c, SDL_Color off) {
+  SDL_Rect b = {x, y, width, height};
+  SDL_SetRenderDrawColor(render, c.r, c.g, c.b, c.a);
+  SDL_RenderFillRect(render, &b);
+  SDL_RenderDrawRect(render, &b);
+  SDL_SetRenderDrawColor(render, off.r, off.g, off.b, off.a);
+  b.y--; b.x--; b.w++; b.h++;
+  SDL_RenderDrawRect(render, &b);
 }
 
-void draw_menu() {
-  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
-  SDL_SetRenderTarget(render, m);
+void draw_board(game_board_t* board, int x, int y, int w, int h) {
+  SDL_Rect background = {x, y, w, h};
 
-  SDL_SetRenderDrawColor(render, main_color.r, main_color.g, main_color.b, 255);
-  SDL_RenderClear(render);
-  
-  if (menu_index == 0) {
-    draw_text("> Play <", 80, (H / 2) - 30, true);
-  } else {
-    draw_text("Play", 80, (H / 2) - 30, true);
-  }
-  if (menu_index == 1) {
-    draw_text("> Config <", 80, (H / 2), true);
-  } else {
-    draw_text("Config", 80, (H / 2), true);
-  }
+  SDL_SetRenderDrawColor(render, 
+      board->scheme.off.r - (fmod((double)board->count_down, (double)1.0) * 50), 
+      board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
-  SDL_SetRenderTarget(render, NULL);
+  SDL_RenderFillRect(render, &background);
+  SDL_RenderDrawRect(render, &background);
 
-  SDL_Point center = {W / 2, H / 2};
-  SDL_RenderCopyEx(render, m, NULL, NULL, 0, &center, SDL_FLIP_NONE); 
+  SDL_SetRenderDrawColor(render, board->scheme.main.r, 
+      board->scheme.main.g, board->scheme.main.b, board->scheme.main.a);
 
-  SDL_DestroyTexture(m);
-}
+  int board_x = board->game->config.board_x;
+  int board_y = board->game->config.board_y;
+  int board_visible = board_y - board->game->config.board_visible;
 
-void draw_game() {
-  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
-  SDL_SetRenderTarget(render, m);
-  
-  SDL_SetRenderDrawColor(render, main_color.r, main_color.g, main_color.b, 255);
-  SDL_RenderClear(render);
+  float block_width = w / board->game->config.board_x;
+  float block_height = h / board->game->config.board_visible;
 
-  SDL_Rect board = {X_OFFSET + 1, Y_OFFSET, 250, 500};
-  SDL_Rect queue = {W - (W / 4), Y_OFFSET, (BLOCK_SIZE * 4) + 20, BLOCK_SIZE * 5 * 3};
-  SDL_Rect hold = {30, Y_OFFSET, BLOCK_SIZE * 4, BLOCK_SIZE * 4};
-  SDL_SetRenderDrawColor(render, off.r - (fmod((double)count_down, (double)1.0) * 50), off.g, off.b, 255);
-  SDL_RenderFillRect(render, &board);
-  SDL_RenderFillRect(render, &queue);
-  SDL_RenderFillRect(render, &hold);
-  SDL_RenderDrawRect(render, &board);
-  SDL_RenderDrawRect(render, &queue);
-  SDL_RenderDrawRect(render, &hold);
-
-  int BOARD_Y = g.config.board_y;
-  int BOARD_X = g.config.board_x;
-  int BOARD_VISIBLE = g.config.board_y - g.config.board_visible;
-
-  SDL_SetRenderDrawColor(render, main_color.r, main_color.g, main_color.b, 255);
-  for (int x = 0; x < BOARD_X + 1; x++) {
-    int rx = X_OFFSET + 1 + (x * BLOCK_SIZE);
-    SDL_RenderDrawLine(render, rx, Y_OFFSET + 1, rx, Y_OFFSET + 500);
-  }
-  for (int y = 0; y < BOARD_Y - BOARD_VISIBLE + 1; y++) {
-    int ry = Y_OFFSET + (y * BLOCK_SIZE);
-    SDL_RenderDrawLine(render, X_OFFSET + 1, ry, X_OFFSET + 250, ry);
+  for (int s = 0; s < board_x + 1; s++) {
+    int rx = x + (s * block_width);
+    SDL_RenderDrawLine(render, rx, y + 1, rx, y + h);
   }
 
-  SDL_Rect b = {0, 0, BLOCK_SIZE, BLOCK_SIZE}; 
-  SDL_Rect w = {0, 0, BLOCK_SIZE + 1, BLOCK_SIZE + 1}; 
-
-  for (int y = 0; y < 4; y++) {
-    for (int x = 0; x < 4; x++) {
-      if ((g.current.m[y]>>(3 - x))&1) {
-        b.x = X_OFFSET + ((x + g.current.pos.x) * BLOCK_SIZE) + 1;
-        b.y = (Y_OFFSET + ((y + g.current.pos.y) * BLOCK_SIZE)) - (BOARD_VISIBLE * BLOCK_SIZE);
-  
-        uint8_t (*color)[3] = &(colors[g.current.t]);
-        SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
-  
-        SDL_RenderFillRect(render, &b);
-        SDL_RenderDrawRect(render, &b);
-
-        SDL_SetRenderDrawColor(render, off.r, off.g, off.b, 255);
-        w.y = b.y - 1;
-        w.x = b.x - 1;
-        SDL_RenderDrawRect(render, &w);
-
-        b.y = (Y_OFFSET + ((y + g.current.ghost_y) * BLOCK_SIZE)) - (BOARD_VISIBLE * BLOCK_SIZE);
-
-        w.y = b.y - 1;
-        SDL_RenderDrawRect(render, &w);
-  
-        SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 160);
-        SDL_RenderFillRect(render, &b);
-        SDL_RenderDrawRect(render, &b);
-
-      }
-
-      if (g.piece_held) {
-        if ((g.held.m[y]>>(3 - x))&1) {
-          b.x = 40 + ((x) * BLOCK_SIZE);
-          b.y = Y_OFFSET + ((y) * BLOCK_SIZE);
-          if (g.held.t == MINO_I) {
-            b.x -= 10;
-            b.y += 10;
-          }
-          if (g.held.t == MINO_O) b.x -= 10;
-
-          uint8_t (*color)[3] = &(colors[g.held.t]);
-          SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
-    
-          SDL_RenderFillRect(render, &b);
-          SDL_RenderDrawRect(render, &b);
-
-          SDL_SetRenderDrawColor(render, off.r, off.g, off.b, 255);
-          w.y = b.y - 1;
-          w.x = b.x - 1;
-          SDL_RenderDrawRect(render, &w);
-        }
-      }
-
-      for (int i = 0; i < 5; i++) {
-        int index = (g.current_index + i);
-
-        uint8_t mino;
-        if (index <= 6) {
-          mino = g.piece_queue[index];
-        } else {
-          index = index % 7;
-          mino = g.next_queue[index];
-        }
-
-        uint8_t (*color)[3] = &(colors[mino]);
-        uint8_t res = (default_matrices[mino][y]>>(3 - x))&1;
-
-        if (res) {
-          b.x = 20 + (W - (W / 4)) + (x * BLOCK_SIZE);
-          b.y = (Y_OFFSET - 10) + (BLOCK_SIZE * i * 3) + (y * BLOCK_SIZE);
-          if (mino == MINO_I) {
-            b.x -= 10;
-            b.y += 10;
-          }
-          if (mino == MINO_O) b.x -= 10;
-          SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
-  
-          SDL_RenderFillRect(render, &b);
-          SDL_RenderDrawRect(render, &b);
-
-          SDL_SetRenderDrawColor(render, off.r, off.g, off.b, 255);
-          w.y = b.y - 1;
-          w.x = b.x - 1;
-          SDL_RenderDrawRect(render, &w);
-        }
-      }
-    }
+  for (int j = 0; j < board->game->config.board_visible + 1; j++) {
+    int ry = y + (j * block_height);
+    SDL_RenderDrawLine(render, x, ry, x + w, ry);
   }
 
-  for (int x = 0; x < BOARD_X; x++) {
-    for (int y = g.highest_line; y < BOARD_Y; y++) {
-      if (g.board[x][y] & SLOT_OCCUPIED) {
-        b.x = X_OFFSET + (x * BLOCK_SIZE) + 1;
-        b.y = (Y_OFFSET + (y * BLOCK_SIZE)) - (BOARD_VISIBLE * BLOCK_SIZE);
- 
-        if (g.line_remove_tick[y]) {
-          if ((int)g.tick % 2 == 0) {
+  for (int s = board->game->highest_line; s < board_y; s++) {
+    for (int j = 0; j < board_x; j++) {
+      if (board->game->board[j][s] & SLOT_OCCUPIED) {
+        if (g.line_remove_tick[s]) {
+          if (board->game->tick % 2 == 0) {
             continue;
           }
         }
 
-        SDL_SetRenderDrawColor(render, off.r, off.g, off.b, 255);
-        w.y = b.y - 1;
-        w.x = b.x - 1;
-        SDL_RenderDrawRect(render, &w);
+        int block_x = x + (j * block_width);
+        int block_y = (y + ((s - board_visible) * block_height));
+        SDL_Color mino_color = mino_colors[(board->game->board[j][s] >> 5)];
 
-        uint8_t (*color)[3] = &(colors[(g.board[x][y] >> 5)]);
-        SDL_SetRenderDrawColor(render, (*color)[0], (*color)[1], (*color)[2], 255);
-        SDL_RenderFillRect(render, &b);
-
-        SDL_RenderDrawRect(render, &b);
+        draw_block(block_x, block_y, block_width, block_height,
+            mino_color, board->scheme.off);
       }
     }
   }
 
+  for (int s = 0; s < 4; s++) {
+    for (int j = 0; j < 4; j++) {
+      if ((board->game->current.m[s]>>(3 - j))&1) {
+        int block_x = x + ((j + board->game->current.pos.x) * block_width);
+        int block_y = y + ((s + board->game->current.pos.y) - board_visible) * block_height;
+
+        SDL_Color mino_color = mino_colors[board->game->current.t];
+        draw_block(block_x, block_y, block_width, block_height,
+            mino_color, board->scheme.off);
+        
+        int ghost_y = y + ((s + board->game->current.ghost_y) - board_visible) * block_height;
+        if (ghost_y != block_y) {
+          mino_color.a -= 100;
+
+          draw_block(block_x, ghost_y, block_width, block_height,
+              mino_color, board->scheme.off);
+        }
+      }
+    }
+  }
+
+  if (board->count_down > 0) board->count_down-=(1.0/FRAME_RATE);
+}
+
+void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
+  float block_width = w / 4;
+  float block_height = h / 4;
+
+  SDL_Rect hold = {x, y, w + 1, h};
+
+  SDL_SetRenderDrawColor(render, board->scheme.main.r, 
+      board->scheme.main.g, board->scheme.main.b, board->scheme.main.a);
+
+  SDL_RenderFillRect(render, &hold);
+  SDL_RenderDrawRect(render, &hold);
+
+  if (!board->game->piece_held) return;
+  for (int s = 0; s < 4; s++) {
+    for (int j = 0; j < 4; j++) {
+      if ((board->game->held.m[s]>>(3 - j))&1) {
+        float block_x = x + (j * block_width) + (block_width / 2.0);
+        int block_y = y + (s * block_height);
+        if (board->game->held.t == MINO_I) {
+          block_x -= block_width / 2;
+          block_x++;
+          block_y += block_height / 2;
+        }
+        if (board->game->held.t == MINO_O) 
+          block_x -= block_width / 2;
+
+        SDL_Color mino_color = mino_colors[board->game->held.t];
+        draw_block(block_x, block_y, block_width, block_height,
+            mino_color, board->scheme.off);
+
+      }
+    }
+  }
+}
+
+void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
+  float block_width = (w / 4);
+  float block_height = h / 15;
+
+  SDL_SetRenderDrawColor(render, board->scheme.main.r, 
+      board->scheme.main.g, board->scheme.main.b, board->scheme.main.a);
+
+  SDL_Rect queue = {x, y, w + 1, h};
+  SDL_RenderFillRect(render, &queue);
+  SDL_RenderDrawRect(render, &queue);
+
+  for (int i = 0; i < 5; i++) {
+    int index = (board->game->current_index + i);
+
+    uint8_t mino;
+    if (index <= 6) {
+      mino = board->game->piece_queue[index];
+    } else {
+      index = index % 7;
+      mino = board->game->next_queue[index];
+    }
+
+    for (int s = 0; s < 4; s++) {
+      for (int j = 0; j < 4; j++) {
+        
+        if ((default_matrices[mino][s]>>(3 - j))&1) {
+          float block_x = x + (j) * block_width + (block_width / 2.0);
+          int block_y = y + ((i * 3) + s) * block_height;
+          if (mino == MINO_I) {
+            block_x -= block_width / 2;
+            block_x++;
+            block_y += block_height / 2;
+          }
+          if (mino == MINO_O) 
+            block_x -= block_width / 2;
+
+          SDL_Color mino_color = mino_colors[mino];
+          draw_block(block_x, block_y, block_width, block_height,
+              mino_color, board->scheme.off);
+
+        }
+      }
+    }
+  }
+}
+
+void draw_timer(game_board_t *board, int x, int y) {
   char *buf = malloc(200);
   long double second = g.timer / 1000000.0f;
   if (second > 60.0f) {
@@ -304,72 +260,90 @@ void draw_game() {
   } else {
     sprintf(buf, "%.6Lf", second);
   }
-  draw_text(buf, 20, H - 40, false);
+  draw_text(buf, x, y, get_font(25), board->scheme.text);
 
-  sprintf(buf, "lines remaining: %i", 20 - g.lines);
-  draw_text(buf, 20, H - 60, false);
+  //sprintf(buf, "lines remaining: %i", 20 - g.lines);
+  //draw_text(buf, 20, H - 60, false);
 
   free(buf);
+}
+
+
+void draw() {
+  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
+  SDL_SetRenderTarget(render, m);
+  
+  SDL_SetRenderDrawColor(render, main_board.scheme.main.r, 
+        main_board.scheme.main.g, main_board.scheme.main.b, 255);
+  SDL_RenderClear(render);
+
+  draw_board(&main_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
+  draw_held_piece(&main_board, (W / 2) - 225, (H / 2) - 250, 100, 100);
+  draw_piece_queue(&main_board, (W / 2) + 125, (H / 2) - 250, 100, 400);
+  draw_timer(&main_board, 20, 20);
 
   SDL_SetRenderTarget(render, NULL);
 
   SDL_Point center = {W / 2, H / 2};
   SDL_RenderCopyEx(render, m, NULL, NULL, 0, &center, SDL_FLIP_NONE); 
 
+  SDL_RenderPresent(render);
   SDL_DestroyTexture(m);
-
-  if (count_down > 0) {
-	  count_down-=(1.0/60.0);
-  }
 }
 
 int main(void) {
-  setup();
-
-  ini_parser p;
-  load_ini_file(&p, "config.ini");
+  setup_sdl();
 
   cetris_config config = tetris_ds_config;
-  
-  int das = atoi(get_ini_value(&p, "das", "das"));
-  config.das_das = das;
-
-  int arr = atoi(get_ini_value(&p, "das", "arr"));
-  config.das_arr = arr;
-
   config.win_condition = twenty_line_sprint;
   config.levels = &tetris_worlds_levels[0];
   config.wait_on_clear = 0;
 
-  char* drop_delay = get_ini_value(&p, "game", "drop_delay");
-  if (drop_delay) config.drop_period = atoi(drop_delay);
+  bool dark_theme = false;
+
+  ini_parser p;
+  if (load_ini_file(&p, "config.ini")) {
+    int das = atoi(get_ini_value(&p, "das", "das"));
+    config.das_das = das;
+
+    int arr = atoi(get_ini_value(&p, "das", "arr"));
+    config.das_arr = arr;
+
+    char* drop_delay = get_ini_value(&p, "game", "drop_delay");
+    if (drop_delay) config.drop_period = atoi(drop_delay);
+    
+    char* next_piece_delay = get_ini_value(&p, "game", "next_piece_delay");
+    if (next_piece_delay) config.next_piece_delay = atoi(next_piece_delay);
+
+    char* lock_delay = get_ini_value(&p, "game", "lock_delay");
+    if (lock_delay) config.lock_delay = atoi(lock_delay);
+
+    char* force_lock = get_ini_value(&p, "game", "force_lock");
+    if (force_lock) config.force_lock = atoi(force_lock);
+
+    char* wait_on_clear = get_ini_value(&p, "game", "wait_on_clear");
+    if (wait_on_clear) config.wait_on_clear = atoi(wait_on_clear);
+
+    char* line_delay_clear = get_ini_value(&p, "game", "line_clear_delay");
+    if (line_delay_clear) config.line_delay_clear = atoi(line_delay_clear);
+
+    char *dark = get_ini_value(&p, "ui", "dark_mode");
+    if (dark && atoi(dark)) {
+      dark_theme = true;
+    }
+  }
   
-  char* next_piece_delay = get_ini_value(&p, "game", "next_piece_delay");
-  if (next_piece_delay) config.next_piece_delay = atoi(next_piece_delay);
+  if (dark_theme) {
+    main_board.scheme = dark_mode;
+    SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_ADD);
+  } else {
+    main_board.scheme = light_mode;
+    SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
+  }
 
-  char* lock_delay = get_ini_value(&p, "game", "lock_delay");
-  if (lock_delay) config.lock_delay = atoi(lock_delay);
-
-  char* force_lock = get_ini_value(&p, "game", "force_lock");
-  if (force_lock) config.force_lock = atoi(force_lock);
-
-  char* wait_on_clear = get_ini_value(&p, "game", "wait_on_clear");
-  if (wait_on_clear) config.wait_on_clear = atoi(wait_on_clear);
-
-  char* line_delay_clear = get_ini_value(&p, "game", "line_clear_delay");
-  if (line_delay_clear) config.line_delay_clear = atoi(line_delay_clear);
-
-  char *dark = get_ini_value(&p, "ui", "dark_mode");
-  if (dark) dark_mode = atoi(dark);
-  else dark_mode = 0;
-
-  load_colors();
-  
-  show_menu = false;
-  menu_index = 0;
-
-  count_down = 3;  
+  main_board.count_down = 3;  
   init_game(&g, &config);
+  main_board.game = &g;
    
   SDL_Event e;
   for(;;) {
@@ -412,7 +386,7 @@ int main(void) {
                 move_piece(&g, ROTATE_CCW); break;
               case 'r':
                 cetris_stop_game(&g);
-                count_down = 3;
+                main_board.count_down = 3;
                 break;
             }
             break;
@@ -437,16 +411,11 @@ int main(void) {
       }
     }
 
-    if (show_menu) {
-      draw_menu();
-    } else {
-      draw_game();
-    }
-
-    if (count_down < 0 && g.waiting) {
+    draw();
+   
+    if (main_board.count_down < 0 && g.waiting) {
 	    cetris_start_game(&g);
     }
-    SDL_RenderPresent(render);
 
     if (g.line_event) {
       int index = g.line_combo - 1;
@@ -456,7 +425,7 @@ int main(void) {
       g.line_event = false;
     }
 
-    SDL_Delay(1000 / 60);
+    SDL_Delay(1000 / FRAME_RATE);
   }
 
 }

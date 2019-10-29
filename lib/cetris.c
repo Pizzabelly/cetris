@@ -403,9 +403,9 @@ void update_board(cetris_game *g) {
 CETRIS_EXPORT void hold_piece(cetris_game *g) {
   if (g->current.held) return;
   if (g->piece_held) {
-    tetrimino tmp = g->current;
+    uint8_t tmp = g->current.t;
     g->current = g->held;
-    g->held = tmp;
+    set_piece(g, tmp, &g->held);
   } else {
     set_piece(g, g->current.t, &g->held);
     g->piece_held = true;
@@ -582,5 +582,3 @@ CETRIS_EXPORT bool update_game_tick(cetris_game *g) {
 
   return true;
 }
-
-

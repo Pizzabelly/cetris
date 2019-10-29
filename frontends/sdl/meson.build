@@ -14,13 +14,9 @@ else
   deps += dependency('SDL2_ttf')
 endif
 
-configure_file(input: 'config.ini', 
-   output: 'config.ini',
-   copy: true, install: false)
-
-configure_file(input: 'OpenSans-Regular.ttf', 
-   output: 'OpenSans-Regular.ttf',
-   copy: true, install: false)
+run_command(
+  'bash', '-c', 'cp -r $MESON_SOURCE_ROOT/frontends/sdl/data $MESON_BUILD_ROOT/frontends/sdl'
+)
 
 executable('cetris', src,
    dependencies: deps,
