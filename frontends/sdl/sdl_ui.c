@@ -28,28 +28,6 @@ SDL_Renderer* render;
 SDL_Window *window;
 SDL_Surface *screen;
 
-color_scheme_t dark_mode = {
-  .main = {100, 100, 100, 255},
-  .off =  {50, 50, 50, 255},
-  .text = {240, 240, 240, 255}
-};
-
-color_scheme_t light_mode = {
-  .main = {255, 255, 255, 255},
-  .off =  {235, 235, 235, 255},
-  .text = {10, 10, 10, 255}
-};
-
-SDL_Color mino_colors[7] = {
-  {253,253,150,255},  // Yellow
-  {174,198,207,255},  // Aqua
-  {255,105,97,255},   // Red
-  {170,221,119,255},  // Olive
-  {255,179,71,255},   // Orange
-  {119,158,203,255},  // Navy
-  {177,156,217,255}   // Purple   
-};
-
 cetris_game g;
 
 game_board_t main_board;
@@ -70,6 +48,8 @@ void setup_sdl() {
   SDL_RenderSetLogicalSize(render, W, H);
   if (!render) exit(fprintf(stderr, "err: could not create SDL renderer\n")); 
 
+  SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
+
   TTF_Init();
 
   for (int i = 0; i < 4; i++) {
@@ -77,6 +57,7 @@ void setup_sdl() {
     sprintf(name, "data/clear_%i.wav", i);
     SDL_LoadWAV(name, &(clear_sound[i].wav_spec), &(clear_sound[i].wav_buffer), &(clear_sound[i].wav_length));
   }
+
   SDL_LoadWAV("data/lock.wav", &(lock_sound.wav_spec), &(lock_sound.wav_buffer), &(lock_sound.wav_length));
   audio_device = SDL_OpenAudioDevice(NULL, 0, &(clear_sound[0].wav_spec), NULL, 0);
   if (audio_device == 0) printf("failed to open audio device\n");
@@ -116,7 +97,7 @@ void draw_block(int x, int y, int width, int height, SDL_Color c, SDL_Color off)
   SDL_RenderFillRect(render, &b);
   SDL_RenderDrawRect(render, &b);
   SDL_SetRenderDrawColor(render, off.r, off.g, off.b, off.a);
-  b.y--; b.x--; b.w++; b.h++;
+  b.y--; b.x--; b.w+=2; b.h+=2;
   SDL_RenderDrawRect(render, &b);
 }
 
@@ -181,7 +162,7 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
         
         int ghost_y = y + ((s + board->game->current.ghost_y) - board_visible) * block_height;
         if (ghost_y != block_y) {
-          mino_color.a -= 100;
+          mino_color.a -= 150;
 
           draw_block(block_x, ghost_y, block_width, block_height,
               mino_color, board->scheme.off);
@@ -194,10 +175,20 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
 }
 
 void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
-  int block_width = w / 4;
-  int block_height = h / 4;
+  if (w < 8) return;
+  if (h < 8) return;
 
-  SDL_Rect hold = {x, y, w + 1, h};
+  int block_width = (w - 4) / 4;
+  int block_height = (h - 4) / 4;
+
+  // make sure blocks are square
+  if (block_width > block_height) {
+    block_width = block_height;
+  } else {
+    block_height = block_width;
+  }
+
+  SDL_Rect hold = {x, y, w, h};
 
   SDL_SetRenderDrawColor(render, board->scheme.off.r, 
       board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
@@ -209,15 +200,13 @@ void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
   for (int s = 0; s < 4; s++) {
     for (int j = 0; j < 4; j++) {
       if ((board->game->held.m[s]>>(3 - j))&1) {
-        int block_x = x + (j * block_width) + (block_width / 2.0);
+        int block_x = (x + 2) + ((j) * block_width);
         int block_y = y + (s * block_height);
         if (board->game->held.t == MINO_I) {
-          block_x -= block_width / 2;
-          block_x++;
           block_y += block_height / 2;
+        } else if (board->game->held.t != MINO_O) {
+          block_x += block_width / 2;
         }
-        if (board->game->held.t == MINO_O) 
-          block_x -= block_width / 2;
 
         SDL_Color mino_color = mino_colors[board->game->held.t];
         draw_block(block_x, block_y, block_width, block_height,
@@ -229,13 +218,23 @@ void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
 }
 
 void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
-  int block_width = (w / 4);
-  int block_height = h / 15;
+  if (w < 8) return;
+  if (h < 32) return;
+
+  int block_width = ((w - 4) / 4);
+  int block_height = ((h - 5) / 5) / 3;
+
+  // make sure blocks are square
+  if (block_width > block_height) {
+    block_width = block_height;
+  } else {
+    block_height = block_width;
+  }
 
   SDL_SetRenderDrawColor(render, board->scheme.off.r, 
       board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
-  SDL_Rect queue = {x, y, w + 1, h};
+  SDL_Rect queue = {x, y, w, h};
   SDL_RenderFillRect(render, &queue);
   SDL_RenderDrawRect(render, &queue);
 
@@ -252,17 +251,14 @@ void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
 
     for (int s = 0; s < 4; s++) {
       for (int j = 0; j < 4; j++) {
-        
         if ((default_matrices[mino][s]>>(3 - j))&1) {
-          int block_x = x + (j) * block_width + (block_width / 2.0);
-          int block_y = y + ((i * 3) + s) * block_height;
+          int block_x = (x + 2) + ((j) * block_width);
+          int block_y = y + (int)(h * (i/5.0)) + (s * block_height);
           if (mino == MINO_I) {
-            block_x -= block_width / 2;
-            block_x++;
             block_y += block_height / 2;
+          } else if (mino != MINO_O) {
+            block_x += block_width / 2;
           }
-          if (mino == MINO_O) 
-            block_x -= block_width / 2;
 
           SDL_Color mino_color = mino_colors[mino];
           draw_block(block_x, block_y, block_width, block_height,
@@ -292,7 +288,6 @@ void draw_timer(game_board_t *board, int x, int y) {
   free(buf);
 }
 
-
 void draw() {
   SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
   SDL_SetRenderTarget(render, m);
@@ -303,7 +298,7 @@ void draw() {
 
   draw_board(&main_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
   draw_held_piece(&main_board, (W / 2) - 225, (H / 2) - 250, 100, 100);
-  draw_piece_queue(&main_board, (W / 2) + 125, (H / 2) - 250, 100, 400);
+  draw_piece_queue(&main_board, (W / 2) + 130, (H / 2) - 250, 100, 450);
   draw_timer(&main_board, 20, 20);
 
   SDL_SetRenderTarget(render, NULL);
@@ -359,10 +354,8 @@ int main(void) {
   
   if (dark_theme) {
     main_board.scheme = dark_mode;
-    SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_ADD);
   } else {
     main_board.scheme = light_mode;
-    SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
   }
 
   main_board.count_down = 3;  
