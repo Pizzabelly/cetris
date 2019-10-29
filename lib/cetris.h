@@ -141,8 +141,11 @@ struct cetris_game {
   uint8_t level;
   uint8_t lines;
   uint8_t line_combo;
-  bool line_event;
   bool game_over;
+
+  // events 
+  bool line_event;
+  bool lock_event;
 
   // scoring flags
   bool tspin;

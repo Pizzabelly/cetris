@@ -1,3 +1,5 @@
+// collection of win conditions, rulesets, and gameplay settings from various tetris games
+
 #include <cetris.h>
 #include <rules.h>
 
@@ -15,6 +17,7 @@ bool marathon(cetris_game *g) {
   return false;
 }
 
+// https://tetris.fandom.com/wiki/Tetris_DS
 cetris_config tetris_ds_config = {
   .board_x = 10,
   .board_y = 43,

@@ -36,6 +36,7 @@ int font_count;
 font_t fonts[10];
 
 audio_clip_t clear_sound[4];
+audio_clip_t lock_sound;
 SDL_AudioDeviceID audio_device;
 
 void setup_sdl() {
@@ -51,9 +52,10 @@ void setup_sdl() {
 
   for (int i = 0; i < 4; i++) {
     char name[25];
-    sprintf(name, "data/yea_%i.wav", i);
+    sprintf(name, "data/clear_%i.wav", i);
     SDL_LoadWAV(name, &(clear_sound[i].wav_spec), &(clear_sound[i].wav_buffer), &(clear_sound[i].wav_length));
   }
+  SDL_LoadWAV("data/lock.wav", &(lock_sound.wav_spec), &(lock_sound.wav_buffer), &(lock_sound.wav_length));
   audio_device = SDL_OpenAudioDevice(NULL, 0, &(clear_sound[0].wav_spec), NULL, 0);
   if (audio_device == 0) printf("failed to open audio device\n");
 }
@@ -113,8 +115,8 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
   int board_y = board->game->config.board_y;
   int board_visible = board_y - board->game->config.board_visible;
 
-  float block_width = w / board->game->config.board_x;
-  float block_height = h / board->game->config.board_visible;
+  int block_width = w / board->game->config.board_x;
+  int block_height = h / board->game->config.board_visible;
 
   for (int s = 0; s < board_x + 1; s++) {
     int rx = x + (s * block_width);
@@ -170,13 +172,13 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
 }
 
 void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
-  float block_width = w / 4;
-  float block_height = h / 4;
+  int block_width = w / 4;
+  int block_height = h / 4;
 
   SDL_Rect hold = {x, y, w + 1, h};
 
-  SDL_SetRenderDrawColor(render, board->scheme.main.r, 
-      board->scheme.main.g, board->scheme.main.b, board->scheme.main.a);
+  SDL_SetRenderDrawColor(render, board->scheme.off.r, 
+      board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
   SDL_RenderFillRect(render, &hold);
   SDL_RenderDrawRect(render, &hold);
@@ -185,7 +187,7 @@ void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
   for (int s = 0; s < 4; s++) {
     for (int j = 0; j < 4; j++) {
       if ((board->game->held.m[s]>>(3 - j))&1) {
-        float block_x = x + (j * block_width) + (block_width / 2.0);
+        int block_x = x + (j * block_width) + (block_width / 2.0);
         int block_y = y + (s * block_height);
         if (board->game->held.t == MINO_I) {
           block_x -= block_width / 2;
@@ -205,11 +207,11 @@ void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
 }
 
 void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
-  float block_width = (w / 4);
-  float block_height = h / 15;
+  int block_width = (w / 4);
+  int block_height = h / 15;
 
-  SDL_SetRenderDrawColor(render, board->scheme.main.r, 
-      board->scheme.main.g, board->scheme.main.b, board->scheme.main.a);
+  SDL_SetRenderDrawColor(render, board->scheme.off.r, 
+      board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
   SDL_Rect queue = {x, y, w + 1, h};
   SDL_RenderFillRect(render, &queue);
@@ -230,7 +232,7 @@ void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
       for (int j = 0; j < 4; j++) {
         
         if ((default_matrices[mino][s]>>(3 - j))&1) {
-          float block_x = x + (j) * block_width + (block_width / 2.0);
+          int block_x = x + (j) * block_width + (block_width / 2.0);
           int block_y = y + ((i * 3) + s) * block_height;
           if (mino == MINO_I) {
             block_x -= block_width / 2;
@@ -408,6 +410,13 @@ int main(void) {
       int success = SDL_QueueAudio(audio_device, clear_sound[index].wav_buffer,  clear_sound[index].wav_length);
       SDL_PauseAudioDevice(audio_device, 0);
       g.line_event = false;
+      g.lock_event = false;
+    }
+
+    if (g.lock_event) {
+      int success = SDL_QueueAudio(audio_device, lock_sound.wav_buffer,  lock_sound.wav_length);
+      SDL_PauseAudioDevice(audio_device, 0);
+      g.lock_event = false;
     }
 
     SDL_Delay(1000 / FRAME_RATE);

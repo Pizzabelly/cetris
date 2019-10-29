@@ -212,7 +212,6 @@ static void next_piece(cetris_game *g) {
 }
 
 static void lock_current(cetris_game *g) {
-  g->current.locked = true;
   for (int y = 0; y < 4; y++) {
     for (int x = 0; x < 4; x++) {
       if ((g->current.m[y]>>(3 - x))&1) {
@@ -226,6 +225,8 @@ static void lock_current(cetris_game *g) {
     g->highest_line = g->current.pos.y;
   }
 
+  g->current.locked = true;
+  g->lock_event = true;
   update_board(g);
 }
 
