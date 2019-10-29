@@ -20,7 +20,7 @@
 
 #include "cetris_sdl.h"
 
-#define W 1280
+#define W 1100
 #define H 720
 #define FRAME_RATE 60
 
@@ -348,22 +348,7 @@ int main(void) {
   SDL_Event e;
   for(;;) {
     while(SDL_PollEvent(&e)) {
-      if (show_menu) {
-        switch (e.type) {
-          case SDL_QUIT:
-            exit(0);
-          case SDL_KEYDOWN:
-            switch (e.key.keysym.sym) {
-              case SDLK_DOWN:
-                if (menu_index < 1) menu_index++;
-                break;
-              case SDLK_UP:
-                if (menu_index > 0) menu_index--;
-                break;
-            }
-        }
-      } else {
-        switch (e.type) {
+       switch (e.type) {
           case SDL_QUIT:
             exit(0);
           case SDL_KEYDOWN:
@@ -407,8 +392,8 @@ int main(void) {
               case 'z':
                 unhold_move(&g, ROTATE_CCW); break;
             }
-        }
-      }
+            break;
+       }
     }
 
     draw();

@@ -14,9 +14,11 @@ else
   deps += dependency('SDL2_ttf')
 endif
 
+if host_machine.system() != 'windows'
 run_command(
   'bash', '-c', 'cp -r $MESON_SOURCE_ROOT/frontends/sdl/data $MESON_BUILD_ROOT/frontends/sdl'
 )
+endif
 
 executable('cetris', src,
    dependencies: deps,
