@@ -24,7 +24,7 @@
 
 #define W 900
 #define H 720
-#define FRAME_RATE 60
+#define FRAME_RATE 144
 
 SDL_Renderer* render;
 SDL_Window *window;
@@ -46,11 +46,11 @@ void setup_sdl() {
   window = SDL_CreateWindow("cetris", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, W, H, SDL_WINDOW_SHOWN);
   screen = SDL_GetWindowSurface(window);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+  SDL_SetHint(SDL_HINT_RENDER_DRIVER,"opengl");
   render = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_ACCELERATED);
+  SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
   SDL_RenderSetLogicalSize(render, W, H);
   if (!render) exit(fprintf(stderr, "err: could not create SDL renderer\n")); 
-
-  SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
 
   TTF_Init();
 
@@ -130,7 +130,7 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
 
   for (int s = 0; s < board_x + 1; s++) {
     int rx = (s * block_width);
-    SDL_RenderDrawLine(render, rx, 1, rx, h);
+    SDL_RenderDrawLine(render, rx, 1, rx, h + 5);
   }
 
   for (int j = 0; j < board->game->config.board_visible + 1; j++) {
@@ -185,7 +185,8 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
   SDL_SetRenderTarget(render, NULL);
 
   SDL_Rect dest = {x, y, w, h};
-  SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
+  //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
+  SDL_RenderCopy(render, m, NULL, &dest);  
 
   SDL_DestroyTexture(m);
 }
@@ -239,7 +240,8 @@ void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
   SDL_SetRenderTarget(render, NULL);
 
   SDL_Rect dest = {x, y, w, h};
-  SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
+  //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE);
+  SDL_RenderCopy(render, m, NULL, &dest); 
 
   SDL_DestroyTexture(m);
 }
@@ -302,7 +304,8 @@ void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
   SDL_SetRenderTarget(render, NULL);
 
   SDL_Rect dest = {x, y, w, h};
-  SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
+  //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE);
+  SDL_RenderCopy(render, m, NULL, &dest);  
 
   SDL_DestroyTexture(m);
 }
