@@ -144,8 +144,8 @@ struct cetris_game {
   bool game_over;
 
   // events 
-  bool line_event;
-  bool lock_event;
+  uint8_t line_event;
+  uint8_t lock_event;
 
   // scoring flags
   bool tspin;

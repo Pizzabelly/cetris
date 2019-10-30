@@ -226,7 +226,7 @@ static void lock_current(cetris_game *g) {
   }
 
   g->current.locked = true;
-  g->lock_event = true;
+  g->lock_event++;
   update_board(g);
 }
 
@@ -394,7 +394,7 @@ void update_board(cetris_game *g) {
   g->lines += lines_cleared;
   if (lines_cleared > 0) {
     g->line_combo++;
-    g->line_event = true;
+    g->line_event++;
   }
   if (g->lines >= (g->level * 10)) {
     g->level++;

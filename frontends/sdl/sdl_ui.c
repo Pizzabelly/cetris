@@ -22,7 +22,7 @@
 
 #include "cetris_sdl.h"
 
-#define W 1100
+#define W 900
 #define H 720
 #define FRAME_RATE 60
 
@@ -104,7 +104,10 @@ void draw_block(int x, int y, int width, int height, SDL_Color c, SDL_Color off)
 }
 
 void draw_board(game_board_t* board, int x, int y, int w, int h) {
-  SDL_Rect background = {x, y, w, h};
+  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h + 5);
+  SDL_SetRenderTarget(render, m);
+
+  SDL_Rect background = {0, 0, w, h + 5};
 
   SDL_SetRenderDrawColor(render, 
       board->scheme.off.r - (int)(fmod((double)board->count_down, (double)1.0) * 50), 
@@ -116,6 +119,8 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
   SDL_SetRenderDrawColor(render, board->scheme.main.r, 
       board->scheme.main.g, board->scheme.main.b, board->scheme.main.a);
 
+  int y_offset = 5;
+
   int board_x = board->game->config.board_x;
   int board_y = board->game->config.board_y;
   int board_visible = board_y - board->game->config.board_visible;
@@ -124,13 +129,13 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
   int block_height = h / board->game->config.board_visible;
 
   for (int s = 0; s < board_x + 1; s++) {
-    int rx = x + (s * block_width);
-    SDL_RenderDrawLine(render, rx, y + 1, rx, y + h);
+    int rx = (s * block_width);
+    SDL_RenderDrawLine(render, rx, 1, rx, h);
   }
 
   for (int j = 0; j < board->game->config.board_visible + 1; j++) {
-    int ry = y + (j * block_height);
-    SDL_RenderDrawLine(render, x, ry, x + w, ry);
+    int ry = y_offset + (j * block_height);
+    SDL_RenderDrawLine(render, 0, ry, w, ry);
   }
 
   for (int s = board->game->highest_line; s < board_y; s++) {
@@ -142,8 +147,8 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
           }
         }
 
-        int block_x = x + (j * block_width);
-        int block_y = (y + ((s - board_visible) * block_height));
+        int block_x = (j * block_width);
+        int block_y = (y_offset + ((s - board_visible) * block_height));
         SDL_Color mino_color = mino_colors[(board->game->board[j][s] >> 5)];
 
         draw_block(block_x, block_y, block_width, block_height,
@@ -152,35 +157,45 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
     }
   }
 
-  if (board->game->game_over) return;
+  if (!board->game->game_over) {
+    for (int s = 0; s < 4; s++) {
+      for (int j = 0; j < 4; j++) {
+        if ((board->game->current.m[s]>>(3 - j))&1) {
+          int block_x = ((j + board->game->current.pos.x) * block_width);
+          int block_y = y_offset + ((s + board->game->current.pos.y) - board_visible) * block_height;
 
-  for (int s = 0; s < 4; s++) {
-    for (int j = 0; j < 4; j++) {
-      if ((board->game->current.m[s]>>(3 - j))&1) {
-        int block_x = x + ((j + board->game->current.pos.x) * block_width);
-        int block_y = y + ((s + board->game->current.pos.y) - board_visible) * block_height;
-
-        SDL_Color mino_color = mino_colors[board->game->current.t];
-        draw_block(block_x, block_y, block_width, block_height,
-            mino_color, board->scheme.off);
-        
-        int ghost_y = y + ((s + board->game->current.ghost_y) - board_visible) * block_height;
-        if (ghost_y != block_y) {
-          mino_color.a -= 150;
-
-          draw_block(block_x, ghost_y, block_width, block_height,
+          SDL_Color mino_color = mino_colors[board->game->current.t];
+          draw_block(block_x, block_y, block_width, block_height,
               mino_color, board->scheme.off);
+          
+          int ghost_y = y_offset + ((s + board->game->current.ghost_y) - board_visible) * block_height;
+          if (ghost_y != block_y) {
+            mino_color.a -= 150;
+
+            draw_block(block_x, ghost_y, block_width, block_height,
+                mino_color, board->scheme.off);
+          }
         }
       }
     }
   }
 
   if (board->count_down > 0) board->count_down-=(1.0f/FRAME_RATE);
+
+  SDL_SetRenderTarget(render, NULL);
+
+  SDL_Rect dest = {x, y, w, h};
+  SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
+
+  SDL_DestroyTexture(m);
 }
 
 void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
-  if (w < 8) return;
+  if (w < 8) return; 
   if (h < 8) return;
+
+  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h);
+  SDL_SetRenderTarget(render, m);
 
   int block_width = (w - 4) / 4;
   int block_height = (h - 4) / 4;
@@ -192,7 +207,7 @@ void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
     block_height = block_width;
   }
 
-  SDL_Rect hold = {x, y, w, h};
+  SDL_Rect hold = {0, 0, w, h};
 
   SDL_SetRenderDrawColor(render, board->scheme.off.r, 
       board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
@@ -200,30 +215,41 @@ void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
   SDL_RenderFillRect(render, &hold);
   SDL_RenderDrawRect(render, &hold);
 
-  if (!board->game->piece_held) return;
-  for (int s = 0; s < 4; s++) {
-    for (int j = 0; j < 4; j++) {
-      if ((board->game->held.m[s]>>(3 - j))&1) {
-        int block_x = (x + 2) + ((j) * block_width);
-        int block_y = y + (s * block_height);
-        if (board->game->held.t == MINO_I) {
-          block_y += block_height / 2;
-        } else if (board->game->held.t != MINO_O) {
-          block_x += block_width / 2;
+  if (board->game->piece_held) {
+    for (int s = 0; s < 4; s++) {
+      for (int j = 0; j < 4; j++) {
+        if ((board->game->held.m[s]>>(3 - j))&1) {
+          int block_x = 2 + ((j) * block_width);
+          int block_y = (s * block_height);
+          if (board->game->held.t == MINO_I) {
+            block_y += block_height / 2;
+          } else if (board->game->held.t != MINO_O) {
+            block_x += block_width / 2;
+          }
+
+          SDL_Color mino_color = mino_colors[board->game->held.t];
+          draw_block(block_x, block_y, block_width, block_height,
+              mino_color, board->scheme.off);
+
         }
-
-        SDL_Color mino_color = mino_colors[board->game->held.t];
-        draw_block(block_x, block_y, block_width, block_height,
-            mino_color, board->scheme.off);
-
       }
     }
   }
+
+  SDL_SetRenderTarget(render, NULL);
+
+  SDL_Rect dest = {x, y, w, h};
+  SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
+
+  SDL_DestroyTexture(m);
 }
 
 void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
   if (w < 8) return;
   if (h < 32) return;
+
+  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h);
+  SDL_SetRenderTarget(render, m);
 
   int block_width = ((w - 4) / 4);
   int block_height = ((h - 5) / 5) / 3;
@@ -238,7 +264,7 @@ void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
   SDL_SetRenderDrawColor(render, board->scheme.off.r, 
       board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
-  SDL_Rect queue = {x, y, w, h};
+  SDL_Rect queue = {0, 0, w, h};
   SDL_RenderFillRect(render, &queue);
   SDL_RenderDrawRect(render, &queue);
 
@@ -256,8 +282,8 @@ void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
     for (int s = 0; s < 4; s++) {
       for (int j = 0; j < 4; j++) {
         if ((default_matrices[mino][s]>>(3 - j))&1) {
-          int block_x = (x + 2) + ((j) * block_width);
-          int block_y = y + (int)(h * (i/5.0)) + (s * block_height);
+          int block_x =  2 + ((j) * block_width);
+          int block_y = (int)(h * (i/5.0)) + (s * block_height);
           if (mino == MINO_I) {
             block_y += block_height / 2;
           } else if (mino != MINO_O) {
@@ -272,6 +298,13 @@ void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
       }
     }
   }
+
+  SDL_SetRenderTarget(render, NULL);
+
+  SDL_Rect dest = {x, y, w, h};
+  SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
+
+  SDL_DestroyTexture(m);
 }
 
 void draw_timer(game_board_t *board, int x, int y) {
@@ -280,8 +313,7 @@ void draw_timer(game_board_t *board, int x, int y) {
   if (second > 60.0f) {
     int minute = (int)(second / 60.0f);
     second -= (minute * 60.0f);
-    format_str
-(buf, 50, "%02d:%09.6Lf", minute, second);
+    format_str(buf, 50, "%02d:%09.6Lf", minute, second);
   } else {
     format_str(buf, 50, "%.6Lf", second);
   }
@@ -294,32 +326,17 @@ void draw_timer(game_board_t *board, int x, int y) {
 }
 
 void draw() {
-   SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
-  //SDL_SetTextureBlendMode(m, SDL_BLENDMODE_NONE);
-  //SDL_SetTextureColorMod(m, main_board.scheme.main.r, 
-  //      main_board.scheme.main.g, main_board.scheme.main.b);  
-  SDL_SetRenderTarget(render, m);
-  
-  SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+  SDL_SetRenderDrawColor(render, main_board.scheme.main.r, 
+      main_board.scheme.main.g, main_board.scheme.main.b, main_board.scheme.main.a);
 
   SDL_RenderClear(render);
   
-  //SDL_Rect back = {0, 0, W, H};
-  ////SDL_RenderFillRect(render, &back);
-  //SDL_RenderDrawRect(render, &back);  
-
   draw_board(&main_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
-  draw_held_piece(&main_board, (W / 2) - 225, (H / 2) - 250, 100, 100);
+  draw_held_piece(&main_board, (W / 2) - 230, (H / 2) - 250, 100, 100);
   draw_piece_queue(&main_board, (W / 2) + 130, (H / 2) - 250, 100, 450);
   draw_timer(&main_board, 20, 20);
 
-  SDL_SetRenderTarget(render, NULL);
-
-  SDL_Point center = {W / 2, H / 2};
-  SDL_RenderCopyEx(render, m, NULL, NULL, 0, &center, SDL_FLIP_NONE); 
-
   SDL_RenderPresent(render);
-  SDL_DestroyTexture(m);
 }
 
 int main(void) {
@@ -431,19 +448,21 @@ int main(void) {
 	    cetris_start_game(&g);
     }
 
-    if (g.line_event) {
+    if (g.line_event > 0) {
       int index = g.line_combo - 1;
-      if (index > 4) index = 4;
+      if (index > 3) index = 3;
       int success = SDL_QueueAudio(audio_device, clear_sound[index].wav_buffer,  clear_sound[index].wav_length);
       SDL_PauseAudioDevice(audio_device, 0);
-      g.line_event = false;
-      g.lock_event = false;
+      g.line_event--;
+      if (g.lock_event) {
+        g.lock_event = 0;
+      }
     }
 
-    if (g.lock_event) {
+    if (g.lock_event > 0) {
       int success = SDL_QueueAudio(audio_device, lock_sound.wav_buffer,  lock_sound.wav_length);
       SDL_PauseAudioDevice(audio_device, 0);
-      g.lock_event = false;
+      g.lock_event--;
     }
 
     SDL_Delay(1000 / FRAME_RATE);
