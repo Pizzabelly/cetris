@@ -44,6 +44,9 @@ typedef struct {
   audio_clip_t *clear_sound;
   audio_clip_t lock_sound;
   audio_clip_t tetris_sound;
+  
+  bool image_background;
+  SDL_Texture *game_background;
 } cetris_skin_t;
 
 typedef struct {
@@ -58,8 +61,7 @@ typedef struct {
   SDL_Texture *queue;
   SDL_Texture *hold;
 
-  SDL_Texture *background;
-  SDL_Texture *game_background;
+  //SDL_Texture *background;
 
   game_board_t game_board;
 } solo_game_t;

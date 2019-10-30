@@ -43,6 +43,37 @@ void setup_sdl(cetris_ui *ui) {
 
   IMG_Init(IMG_INIT_PNG);
 
+  SDL_AudioSpec spec;
+
+  SDL_memset(&spec, 0, sizeof(spec));
+  spec.freq = 44100;
+  spec.format = AUDIO_S16;
+  spec.channels = 2;
+  spec.samples = 4096;
+  spec.callback = NULL;
+
+  ui->audio_device = SDL_OpenAudioDevice(NULL, 0, &spec, NULL, 0);
+  if (ui->audio_device == 0) printf("failed to open audio device\n");
+}
+
+TTF_Font* get_font(cetris_ui *ui, int size) {
+  for (int i = 0; i < ui->font_count; i++) {
+    if (ui->fonts[i].size == size) {
+      return ui->fonts[i].font;
+    }
+  }
+  ui->fonts[ui->font_count].font = TTF_OpenFont("data/OpenSans-Regular.ttf", size);
+  TTF_SetFontHinting(ui->fonts[ui->font_count].font, TTF_HINTING_MONO);
+  ui->fonts[ui->font_count].size = size;
+  return ui->fonts[ui->font_count++].font;
+}
+
+SDL_Texture* load_png(cetris_ui* ui, char* file) {
+  SDL_Surface* loaded_surface = IMG_Load(file);
+  return SDL_CreateTextureFromSurface(ui->render, loaded_surface);
+}
+
+void load_skin(cetris_ui *ui) {
   ui->skin.clear_sound = (audio_clip_t *)malloc(sizeof(audio_clip_t) * ui->skin.clear_sound_count);
   for (int i = 0; i < ui->skin.clear_sound_count; i++) {
     char name[25];
@@ -57,21 +88,12 @@ void setup_sdl(cetris_ui *ui) {
 
   SDL_LoadWAV("data/tetris.wav", &ui->skin.tetris_sound.wav_spec, 
     &ui->skin.tetris_sound.wav_buffer, &ui->skin.tetris_sound.wav_length);
-
-  ui->audio_device = SDL_OpenAudioDevice(NULL, 0, &ui->skin.clear_sound[0].wav_spec, NULL, 0);
-  if (ui->audio_device == 0) printf("failed to open audio device\n");
-}
-
-TTF_Font* get_font(cetris_ui *ui, int size) {
-  for (int i = 0; i < ui->font_count; i++) {
-    if (ui->fonts[i].size == size) {
-      return ui->fonts[i].font;
-    }
+  
+  if (ui->skin.image_background) {
+    ui->skin.game_background = load_png(ui, "data/loli.png");
+    SDL_SetTextureAlphaMod(ui->skin.game_background, 40);
+    SDL_SetTextureBlendMode(ui->skin.game_background, SDL_BLENDMODE_BLEND);
   }
-  ui->fonts[ui->font_count].font = TTF_OpenFont("data/OpenSans-Regular.ttf", size);
-  TTF_SetFontHinting(ui->fonts[ui->font_count].font, TTF_HINTING_MONO);
-  ui->fonts[ui->font_count].size = size;
-  return ui->fonts[ui->font_count++].font;
 }
 
 void draw_text(cetris_ui *ui, char* string, int x, int y, TTF_Font* font, SDL_Color color) {
@@ -88,11 +110,6 @@ void draw_text(cetris_ui *ui, char* string, int x, int y, TTF_Font* font, SDL_Co
   SDL_RenderCopy(ui->render, tex, NULL, &message);
   SDL_DestroyTexture(tex);
   SDL_FreeSurface(surface);
-}
-
-SDL_Texture* load_png(cetris_ui* ui, char* file) {
-  SDL_Surface* loaded_surface = IMG_Load(file);
-  return SDL_CreateTextureFromSurface(ui->render, loaded_surface);
 }
 
 void draw_image(cetris_ui *ui, SDL_Texture *i, int x, int y, int width, int height) {
@@ -115,13 +132,17 @@ void draw_board(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y
   SDL_RenderClear(ui->render);
 
   SDL_Rect background = {0, 0, w, h + 5};
+  
+  if (ui->skin.image_background) {
+    SDL_RenderCopy(ui->render, ui->skin.game_background, NULL, &background);
+  } else {
+    SDL_SetRenderDrawColor(ui->render, 
+        board->scheme.off.r - (int)(fmod((double)board->count_down, (double)1.0) * 50), 
+        board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
-  SDL_SetRenderDrawColor(ui->render, 
-      board->scheme.off.r - (int)(fmod((double)board->count_down, (double)1.0) * 50), 
-      board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
-
-  SDL_RenderFillRect(ui->render, &background);
-  SDL_RenderDrawRect(ui->render, &background);
+    SDL_RenderFillRect(ui->render, &background);
+    SDL_RenderDrawRect(ui->render, &background);
+  }
 
   SDL_SetRenderDrawColor(ui->render, board->scheme.main.r, 
       board->scheme.main.g, board->scheme.main.b, board->scheme.main.a);
@@ -342,12 +363,11 @@ void draw(cetris_ui* ui) {
 
   switch (ui->current_game) {
     case SOLO:
-      draw_image(ui, ui->solo.background, 0, 0, W, H);
+      //draw_image(ui, ui->solo.background, 0, 0, W, H);
       draw_board(ui, ui->solo.main, &ui->solo.game_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
       draw_held_piece(ui, ui->solo.hold, &ui->solo.game_board, (W / 2) - 230, (H / 2) - 250, 100, 100);
       draw_piece_queue(ui, ui->solo.queue, &ui->solo.game_board, (W / 2) + 130, (H / 2) - 250, 100, 450);
       draw_timer(ui, &ui->solo.game_board, 20, 20);
-      draw_image(ui, ui->solo.game_background, (W / 2) - 125, (H / 2) - 250, 250, 500);
       break;
   }
 
@@ -414,11 +434,7 @@ void load_solo(cetris_ui *ui) {
   ui->solo.main = SDL_CreateTexture(ui->render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 251, 506);
   ui->solo.queue = SDL_CreateTexture(ui->render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 450);
   ui->solo.hold = SDL_CreateTexture(ui->render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 100);
-  ui->solo.background = load_png(ui, "data/background.png");
-  ui->solo.game_background = load_png(ui, "data/loli.png");
-  SDL_SetTextureAlphaMod(ui->solo.game_background, 40);
-  SDL_SetTextureBlendMode(ui->solo.game_background, SDL_BLENDMODE_BLEND);
-
+  //ui->solo.background = load_png(ui, "data/background.png");
   ui->solo.game_board.count_down = 3;
 
   init_game(&ui->solo.game_board.game, &ui->solo.game_board.conf);
@@ -512,10 +528,13 @@ void handle_game_events(cetris_ui *ui, game_board_t *board) {
 
 int main(void) {
   cetris_ui ui;
+  
+  setup_sdl(&ui);
+
   ui.skin.clear_sound_count = 5;
   ui.skin.random_audio = true;
-
-  setup_sdl(&ui);
+  ui.skin.image_background = true;
+  load_skin(&ui);
 
   ui.current_game = SOLO;
 
