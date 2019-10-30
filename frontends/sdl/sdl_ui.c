@@ -2,10 +2,12 @@
 #ifdef _WIN32
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <SDL_image.h>
 #define format_str sprintf_s
 #else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 #define format_str snprintf
 #endif
 #include <math.h>
@@ -60,6 +62,8 @@ void setup_sdl() {
     SDL_LoadWAV(name, &(clear_sound[i].wav_spec), &(clear_sound[i].wav_buffer), &(clear_sound[i].wav_length));
   }
 
+  IMG_Init(IMG_INIT_PNG);
+
   SDL_LoadWAV("data/lock.wav", &(lock_sound.wav_spec), &(lock_sound.wav_buffer), &(lock_sound.wav_length));
   audio_device = SDL_OpenAudioDevice(NULL, 0, &(clear_sound[0].wav_spec), NULL, 0);
   if (audio_device == 0) printf("failed to open audio device\n");
@@ -77,6 +81,11 @@ TTF_Font* get_font(int size) {
   return fonts[font_count++].font;
 }
 
+SDL_Texture* load_png(char* file) {
+  SDL_Surface* loaded_surface = IMG_Load(file);
+  return SDL_CreateTextureFromSurface(render, loaded_surface);
+}
+
 void draw_text(char* string, int x, int y, TTF_Font* font, SDL_Color color) {
   SDL_Surface *surface;
   surface = TTF_RenderText_Solid(font, string, color);
@@ -91,6 +100,11 @@ void draw_text(char* string, int x, int y, TTF_Font* font, SDL_Color color) {
   SDL_RenderCopy(render, tex, NULL, &message);
   SDL_DestroyTexture(tex);
   SDL_FreeSurface(surface);
+}
+
+void draw_image(SDL_Texture *i, int x, int y, int width, int height) {
+  SDL_Rect dest = {x, y, width, height};
+  SDL_RenderCopy(render, i, NULL, &dest);
 }
 
 void draw_block(int x, int y, int width, int height, SDL_Color c, SDL_Color off) {
@@ -332,10 +346,12 @@ void draw(solo_game *s) {
 
   SDL_RenderClear(render);
   
+  draw_image(s->background, 0, 0, W, H);
   draw_board(s->main, &main_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
   draw_held_piece(s->hold, &main_board, (W / 2) - 230, (H / 2) - 250, 100, 100);
   draw_piece_queue(s->queue, &main_board, (W / 2) + 130, (H / 2) - 250, 100, 450);
   draw_timer(&main_board, 20, 20);
+  draw_image(s->game_background, (W / 2) - 125, (H / 2) - 250, 250, 500);
 
   SDL_RenderPresent(render);
 }
@@ -396,6 +412,10 @@ int main(void) {
 
   solo_game screen;
   load_solo(&screen);
+  screen.background = load_png("data/background.png");
+  screen.game_background = load_png("data/loli.png");
+  SDL_SetTextureBlendMode(screen.game_background, SDL_BLENDMODE_BLEND);
+  SDL_SetTextureAlphaMod(screen.game_background, 40);
 
   main_board.count_down = 3;  
   init_game(&g, &config);

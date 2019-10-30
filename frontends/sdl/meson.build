@@ -12,6 +12,7 @@ else
   deps += compiler.find_library('m')
   deps += dependency('SDl2')
   deps += dependency('SDL2_ttf')
+  deps += dependency('SDL2_image')
 endif
 
 if host_machine.system() != 'windows'

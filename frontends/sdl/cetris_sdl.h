@@ -47,5 +47,7 @@ typedef struct {
   SDL_Texture *main;
   SDL_Texture *queue;
   SDL_Texture *hold;
+  SDL_Texture *background;
+  SDL_Texture *game_background;
 } solo_game;
 
