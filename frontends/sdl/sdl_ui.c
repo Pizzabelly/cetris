@@ -103,9 +103,9 @@ void draw_block(int x, int y, int width, int height, SDL_Color c, SDL_Color off)
   SDL_RenderDrawRect(render, &b);
 }
 
-void draw_board(game_board_t* board, int x, int y, int w, int h) {
-  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h + 5);
+void draw_board(SDL_Texture *m, game_board_t* board, int x, int y, int w, int h) {
   SDL_SetRenderTarget(render, m);
+  SDL_RenderClear(render);
 
   SDL_Rect background = {0, 0, w, h + 5};
 
@@ -187,16 +187,16 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
   SDL_Rect dest = {x, y, w, h};
   //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
   SDL_RenderCopy(render, m, NULL, &dest);  
-
-  SDL_DestroyTexture(m);
 }
 
-void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
+void draw_held_piece(SDL_Texture *m, game_board_t* board, int x, int y, int w, int h) {
   if (w < 8) return; 
   if (h < 8) return;
 
-  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h);
   SDL_SetRenderTarget(render, m);
+  SDL_RenderClear(render);
+
+  SDL_RenderClear(render);
 
   int block_width = (w - 4) / 4;
   int block_height = (h - 4) / 4;
@@ -242,16 +242,15 @@ void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
   SDL_Rect dest = {x, y, w, h};
   //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE);
   SDL_RenderCopy(render, m, NULL, &dest); 
-
-  SDL_DestroyTexture(m);
 }
 
-void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
+void draw_piece_queue(SDL_Texture *m, game_board_t* board, int x, int y, int w, int h) {
   if (w < 8) return;
   if (h < 32) return;
 
-  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h);
   SDL_SetRenderTarget(render, m);
+
+  SDL_RenderClear(render);
 
   int block_width = ((w - 4) / 4);
   int block_height = ((h - 5) / 5) / 3;
@@ -307,7 +306,6 @@ void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
   //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE);
   SDL_RenderCopy(render, m, NULL, &dest);  
 
-  SDL_DestroyTexture(m);
 }
 
 void draw_timer(game_board_t *board, int x, int y) {
@@ -328,18 +326,24 @@ void draw_timer(game_board_t *board, int x, int y) {
   free(buf);
 }
 
-void draw() {
+void draw(solo_game *s) {
   SDL_SetRenderDrawColor(render, main_board.scheme.main.r, 
       main_board.scheme.main.g, main_board.scheme.main.b, main_board.scheme.main.a);
 
   SDL_RenderClear(render);
   
-  draw_board(&main_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
-  draw_held_piece(&main_board, (W / 2) - 230, (H / 2) - 250, 100, 100);
-  draw_piece_queue(&main_board, (W / 2) + 130, (H / 2) - 250, 100, 450);
+  draw_board(s->main, &main_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
+  draw_held_piece(s->hold, &main_board, (W / 2) - 230, (H / 2) - 250, 100, 100);
+  draw_piece_queue(s->queue, &main_board, (W / 2) + 130, (H / 2) - 250, 100, 450);
   draw_timer(&main_board, 20, 20);
 
   SDL_RenderPresent(render);
+}
+
+void load_solo(solo_game* s) {
+  s->main = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 250, 505);
+  s->queue = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 450);
+  s->hold = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 100);
 }
 
 int main(void) {
@@ -389,6 +393,9 @@ int main(void) {
   } else {
     main_board.scheme = light_mode;
   }
+
+  solo_game screen;
+  load_solo(&screen);
 
   main_board.count_down = 3;  
   init_game(&g, &config);
@@ -445,7 +452,7 @@ int main(void) {
        }
     }
 
-    draw();
+    draw(&screen);
    
     if (main_board.count_down < 0 && g.waiting) {
 	    cetris_start_game(&g);

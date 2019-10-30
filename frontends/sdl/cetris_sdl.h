@@ -42,3 +42,10 @@ typedef struct {
   color_scheme_t scheme;
   float count_down;
 } game_board_t;
+
+typedef struct {
+  SDL_Texture *main;
+  SDL_Texture *queue;
+  SDL_Texture *hold;
+} solo_game;
+
