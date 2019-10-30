@@ -39,8 +39,10 @@ game_board_t main_board;
 int font_count;
 font_t fonts[10];
 
-audio_clip_t clear_sound[4];
+bool random_audio;
+audio_clip_t clear_sound[5];
 audio_clip_t lock_sound;
+audio_clip_t tetris_sound;
 SDL_AudioDeviceID audio_device;
 
 void setup_sdl() {
@@ -56,15 +58,16 @@ void setup_sdl() {
 
   TTF_Init();
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 5; i++) {
     char name[25];
-    format_str(name, 25, "data/clear_%i.wav", i);
+    format_str(name, 25, "data/bclear_%i.wav", i);
     SDL_LoadWAV(name, &(clear_sound[i].wav_spec), &(clear_sound[i].wav_buffer), &(clear_sound[i].wav_length));
   }
 
   IMG_Init(IMG_INIT_PNG);
 
   SDL_LoadWAV("data/lock.wav", &(lock_sound.wav_spec), &(lock_sound.wav_buffer), &(lock_sound.wav_length));
+  SDL_LoadWAV("data/tetris.wav", &(tetris_sound.wav_spec), &(tetris_sound.wav_buffer), &(tetris_sound.wav_length));
   audio_device = SDL_OpenAudioDevice(NULL, 0, &(clear_sound[0].wav_spec), NULL, 0);
   if (audio_device == 0) printf("failed to open audio device\n");
 }
@@ -420,6 +423,8 @@ int main(void) {
   main_board.count_down = 3;  
   init_game(&g, &config);
   main_board.game = &g;
+
+  random_audio = true;
    
   SDL_Event e;
   for(;;) {
@@ -479,14 +484,25 @@ int main(void) {
     }
 
     if (g.line_event > 0) {
-      int index = g.line_combo - 1;
-      if (index > 3) index = 3;
+      int index;
+      if (!random_audio) {
+        index = g.line_combo - 1;
+        if (index > 3) index = 3;
+      } else {
+        index = rand() % 5;
+      }
       int success = SDL_QueueAudio(audio_device, clear_sound[index].wav_buffer,  clear_sound[index].wav_length);
       SDL_PauseAudioDevice(audio_device, 0);
       g.line_event--;
       if (g.lock_event) {
         g.lock_event = 0;
       }
+    }
+
+    if (g.tetris_event > 0) {
+      int success = SDL_QueueAudio(audio_device, tetris_sound.wav_buffer,  tetris_sound.wav_length);
+      SDL_PauseAudioDevice(audio_device, 0);
+      g.tetris_event--;
     }
 
     if (g.lock_event > 0) {

@@ -146,6 +146,7 @@ struct cetris_game {
   // events 
   uint8_t line_event;
   uint8_t lock_event;
+  uint8_t tetris_event;
 
   // scoring flags
   bool tspin;

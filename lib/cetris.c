@@ -393,8 +393,12 @@ void update_board(cetris_game *g) {
 
   g->lines += lines_cleared;
   if (lines_cleared > 0) {
+    if (lines_cleared == 4) {
+      g->tetris_event++;
+    } else {
+      g->line_event++;
+    }
     g->line_combo++;
-    g->line_event++;
   }
   if (g->lines >= (g->level * 10)) {
     g->level++;
