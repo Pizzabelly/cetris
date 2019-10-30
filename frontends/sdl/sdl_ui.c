@@ -2,9 +2,11 @@
 #ifdef _WIN32
 #include <SDL.h>
 #include <SDL_ttf.h>
+#define format_str sprintf_s
 #else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#define format_str snprintf
 #endif
 #include <math.h>
 #include <stdlib.h>
@@ -54,7 +56,7 @@ void setup_sdl() {
 
   for (int i = 0; i < 4; i++) {
     char name[25];
-    sprintf(name, "data/clear_%i.wav", i);
+    format_str(name, 25, "data/clear_%i.wav", i);
     SDL_LoadWAV(name, &(clear_sound[i].wav_spec), &(clear_sound[i].wav_buffer), &(clear_sound[i].wav_length));
   }
 
@@ -92,7 +94,7 @@ void draw_text(char* string, int x, int y, TTF_Font* font, SDL_Color color) {
 }
 
 void draw_block(int x, int y, int width, int height, SDL_Color c, SDL_Color off) {
-  SDL_Rect b = {x, y, width, height};
+  SDL_Rect b = {x + 1, y + 1, width - 1, height - 1};
   SDL_SetRenderDrawColor(render, c.r, c.g, c.b, c.a);
   SDL_RenderFillRect(render, &b);
   SDL_RenderDrawRect(render, &b);
@@ -105,7 +107,7 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
   SDL_Rect background = {x, y, w, h};
 
   SDL_SetRenderDrawColor(render, 
-      board->scheme.off.r - (fmod((double)board->count_down, (double)1.0) * 50), 
+      board->scheme.off.r - (int)(fmod((double)board->count_down, (double)1.0) * 50), 
       board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
   SDL_RenderFillRect(render, &background);
@@ -150,6 +152,8 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
     }
   }
 
+  if (board->game->game_over) return;
+
   for (int s = 0; s < 4; s++) {
     for (int j = 0; j < 4; j++) {
       if ((board->game->current.m[s]>>(3 - j))&1) {
@@ -171,7 +175,7 @@ void draw_board(game_board_t* board, int x, int y, int w, int h) {
     }
   }
 
-  if (board->count_down > 0) board->count_down-=(1.0/FRAME_RATE);
+  if (board->count_down > 0) board->count_down-=(1.0f/FRAME_RATE);
 }
 
 void draw_held_piece(game_board_t* board, int x, int y, int w, int h) {
@@ -271,30 +275,38 @@ void draw_piece_queue(game_board_t* board, int x, int y, int w, int h) {
 }
 
 void draw_timer(game_board_t *board, int x, int y) {
-  char *buf = malloc(200);
+  char *buf = malloc(50);
   long double second = g.timer / 1000000.0f;
   if (second > 60.0f) {
     int minute = (int)(second / 60.0f);
     second -= (minute * 60.0f);
-    sprintf(buf, "%02d:%09.6Lf", minute, second);
+    format_str
+(buf, 50, "%02d:%09.6Lf", minute, second);
   } else {
-    sprintf(buf, "%.6Lf", second);
+    format_str(buf, 50, "%.6Lf", second);
   }
   draw_text(buf, x, y, get_font(25), board->scheme.text);
 
-  //sprintf(buf, "lines remaining: %i", 20 - g.lines);
+  //format_str(buf, 50, "lines remaining: %i", 20 - g.lines);
   //draw_text(buf, 20, H - 60, false);
 
   free(buf);
 }
 
 void draw() {
-  SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
+   SDL_Texture *m = SDL_CreateTexture(render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, W, H);
+  //SDL_SetTextureBlendMode(m, SDL_BLENDMODE_NONE);
+  //SDL_SetTextureColorMod(m, main_board.scheme.main.r, 
+  //      main_board.scheme.main.g, main_board.scheme.main.b);  
   SDL_SetRenderTarget(render, m);
   
-  SDL_SetRenderDrawColor(render, main_board.scheme.main.r, 
-        main_board.scheme.main.g, main_board.scheme.main.b, 255);
+  SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+
   SDL_RenderClear(render);
+  
+  //SDL_Rect back = {0, 0, W, H};
+  ////SDL_RenderFillRect(render, &back);
+  //SDL_RenderDrawRect(render, &back);  
 
   draw_board(&main_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
   draw_held_piece(&main_board, (W / 2) - 225, (H / 2) - 250, 100, 100);

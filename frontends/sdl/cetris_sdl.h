@@ -5,8 +5,8 @@ typedef struct {
 } color_scheme_t;
 
 color_scheme_t dark_mode = {
-  .main = {100, 100, 100, 255},
-  .off =  {50, 50, 50, 255},
+  .main = {90, 90, 90, 255},
+  .off =  {70, 70, 70, 255},
   .text = {240, 240, 240, 255}
 };
 

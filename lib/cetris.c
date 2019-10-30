@@ -245,7 +245,6 @@ static void hard_drop(cetris_game *g) {
   g->score += 2 * drop_count; // 2 score for each hard-drop'd cell
 
   lock_current(g);
-  update_board(g);
 }
 
 static void rotate_matrix(cetris_game *g, piece_matrix *m, bool clockwise) {
@@ -377,10 +376,11 @@ void update_board(cetris_game *g) {
   make_ghosts(g);
 
   if (g->current.locked && !g->next_piece_tick) {
+    
     if (lines_cleared > 0) {
       g->next_piece_tick = g->tick + g->config.next_piece_delay;
     } else {
-      next_piece(g);
+      g->next_piece_tick = g->tick;
       g->line_combo = 0;
     }
   }
@@ -575,11 +575,11 @@ CETRIS_EXPORT bool update_game_tick(cetris_game *g) {
   } else if (!g->next_das_move && g->das_wait && g->tick >= g->das_wait) {
     g->next_das_move = g->tick + g->config.das_arr;
   }
-#endif
-
-  if (did_move) update_board(g);
+#endif  
 
   if (g->config.win_condition(g)) g->game_over = true;
+
+  if (did_move) update_board(g);
 
   return true;
 }
