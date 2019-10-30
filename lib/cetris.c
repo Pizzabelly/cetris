@@ -485,23 +485,17 @@ CETRIS_EXPORT void init_game(cetris_game *g, cetris_config* c) {
 #endif
 
   cetris_config config;
-  if (!c) {
-    config = g->config;
-  } else {
-    config = *c;
-  }
+  if (!c) config = g->config;
+  else config = *c;
 
   // check for config errorsa
-  if (config.next_piece_delay < config.line_delay_clear) {
+  if (config.next_piece_delay < config.line_delay_clear)
     config.next_piece_delay = config.line_delay_clear;
-  }
 
-  if (!config.wait_on_clear) {
+  if (!config.wait_on_clear)
     config.next_piece_delay = 0;
-  }
 
   memset(g, 0, sizeof(cetris_game));
-
   memcpy(&g->config, &config, sizeof(cetris_config));
 
   g->board = (uint8_t **)malloc(sizeof(uint8_t *) * config.board_x);
@@ -513,8 +507,8 @@ CETRIS_EXPORT void init_game(cetris_game *g, cetris_config* c) {
   g->line_remove_tick = (ctick *)malloc(sizeof(ctick) * config.board_y);
   memset(g->line_remove_tick, 0, sizeof(ctick) * config.board_y);
 
-  g->level = config.starting_level;
   g->waiting = true;
+  g->level = config.starting_level;
 
   g->highest_line = config.board_y;
 

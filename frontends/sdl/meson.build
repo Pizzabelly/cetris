@@ -1,4 +1,4 @@
-src = ['sdl_ui.c']
+src = ['cetris_sdl.c']
 
 deps = [cetris]
 inc = [cetris_inc]

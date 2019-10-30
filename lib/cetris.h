@@ -96,7 +96,8 @@ typedef struct {
   bool wait_on_clear;
 
   ctick *levels;
-  
+
+  // variable win condition
   bool (*win_condition)(cetris_game *);
 } cetris_config;
 
@@ -143,7 +144,7 @@ struct cetris_game {
   uint8_t line_combo;
   bool game_over;
 
-  // events 
+    // events 
   uint8_t line_event;
   uint8_t lock_event;
   uint8_t tetris_event;

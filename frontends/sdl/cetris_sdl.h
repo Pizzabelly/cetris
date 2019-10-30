@@ -38,8 +38,18 @@ typedef struct {
 } font_t;
 
 typedef struct {
-  cetris_game* game;
+  bool random_audio;
+  int clear_sound_count;
+
+  audio_clip_t *clear_sound;
+  audio_clip_t lock_sound;
+  audio_clip_t tetris_sound;
+} cetris_skin_t;
+
+typedef struct {
+  cetris_game game;
   color_scheme_t scheme;
+  cetris_config conf;
   float count_down;
 } game_board_t;
 
@@ -47,7 +57,46 @@ typedef struct {
   SDL_Texture *main;
   SDL_Texture *queue;
   SDL_Texture *hold;
+
   SDL_Texture *background;
   SDL_Texture *game_background;
-} solo_game;
 
+  game_board_t game_board;
+} solo_game_t;
+
+typedef struct {
+  int key_down;
+  int key_right;
+  int key_left;
+  int key_rotate_cw;
+  int key_rotate_ccw;
+  int key_drop;
+  int key_hold;
+  int key_restart;
+} key_bindings_t;
+
+typedef struct {
+  key_bindings_t keys;
+} config_t;
+
+enum {
+  SOLO
+};
+
+typedef struct {
+  int current_game;
+  solo_game_t solo;
+  color_scheme_t colors;
+
+  SDL_Renderer* render;
+  SDL_Window *window;
+  SDL_Surface *screen;
+
+  int font_count;
+  font_t fonts[10];
+
+  SDL_AudioDeviceID audio_device;
+  
+  config_t config;
+  cetris_skin_t skin;
+} cetris_ui;
