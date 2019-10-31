@@ -39,14 +39,26 @@ typedef struct {
 
 typedef struct {
   bool random_audio;
-  int clear_sound_count;
 
+  int clear_sound_count;
   audio_clip_t *clear_sound;
+
+  int tetris_sound_count;
+  audio_clip_t *tetris_sound;
   audio_clip_t lock_sound;
-  audio_clip_t tetris_sound;
-  
+ 
+  bool custom_block;
+  SDL_Texture *blocks;
+
   bool image_background;
   SDL_Texture *game_background;
+
+  bool custom_border;
+  SDL_Texture *border;
+  
+  bool custom_background;
+  SDL_Texture *background;
+
 } cetris_skin_t;
 
 typedef struct {
@@ -60,8 +72,6 @@ typedef struct {
   SDL_Texture *main;
   SDL_Texture *queue;
   SDL_Texture *hold;
-
-  //SDL_Texture *background;
 
   game_board_t game_board;
 } solo_game_t;
@@ -79,6 +89,7 @@ typedef struct {
 
 typedef struct {
   key_bindings_t keys;
+  char *skin_name;
 } config_t;
 
 enum {
@@ -100,5 +111,6 @@ typedef struct {
   SDL_AudioDeviceID audio_device;
   
   config_t config;
+
   cetris_skin_t skin;
 } cetris_ui;

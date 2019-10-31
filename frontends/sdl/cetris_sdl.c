@@ -14,6 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <dirent.h>
+#include <errno.h>
+
 
 #include <time.h>
 
@@ -70,30 +73,131 @@ TTF_Font* get_font(cetris_ui *ui, int size) {
 
 SDL_Texture* load_png(cetris_ui* ui, char* file) {
   SDL_Surface* loaded_surface = IMG_Load(file);
+  if (loaded_surface == NULL) return NULL;
   return SDL_CreateTextureFromSurface(ui->render, loaded_surface);
 }
 
-void load_skin(cetris_ui *ui) {
-  ui->skin.clear_sound = (audio_clip_t *)malloc(sizeof(audio_clip_t) * ui->skin.clear_sound_count);
-  for (int i = 0; i < ui->skin.clear_sound_count; i++) {
-    char name[25];
-    format_str(name, 25, "data/bclear_%i.wav", i);
+void load_multiple_audio(char* name, char* dir_name, int *count, audio_clip_t* list) {
+  char file[120];
 
-    SDL_LoadWAV(name, &ui->skin.clear_sound[i].wav_spec, 
-        &ui->skin.clear_sound[i].wav_buffer, &ui->skin.clear_sound[i].wav_length);
+  int index = 0;
+  for (int i = 0; i < (*count); i++) {
+    format_str(file, 120, "%s/%s_%i.wav", dir_name, name, i);
+
+    if (SDL_LoadWAV(file, &list[index].wav_spec, 
+        &list[index].wav_buffer, &list[index].wav_length) == NULL) {
+      (*count)--;
+    } else index++;
+  }
+}
+
+void load_skin(cetris_ui *ui) {
+  char *dir_name = malloc(100);
+  format_str(dir_name, 100, "skins/%s", ui->config.skin_name);
+  DIR* dir = opendir(dir_name);
+
+  if (dir) {
+    closedir(dir);
+  } else if (ENOENT == errno) {
+    dir_name = "skins/default";
   }
 
-  SDL_LoadWAV("data/lock.wav", &ui->skin.lock_sound.wav_spec,
+  ini_parser p;
+
+  char ini_path[100];
+  format_str(ini_path, 100, "%s/skin.ini", dir_name);
+
+  char name[120];
+  if (load_ini_file(&p, ini_path)) {
+    char* random_clear = get_ini_value(&p, "sounds", "random_clear_sound");
+    if (random_clear && !strcmp(random_clear, "true")) {
+      ui->skin.random_audio = true;
+    } else ui->skin.random_audio = false;
+
+    char* playboard = get_ini_value(&p, "graphics", "custom_playboard");
+    if (playboard && !strcmp(playboard, "true")) {
+      ui->skin.image_background = true;
+    } else ui->skin.image_background = false;
+
+    if (ui->skin.image_background) {
+      format_str(name, 120, "%s/playboard.png", dir_name);
+      ui->skin.game_background = load_png(ui, name);
+      if (ui->skin.game_background == NULL) {
+        ui->skin.image_background = false;
+      } else {
+        SDL_SetTextureAlphaMod(ui->skin.game_background, 100);
+        SDL_SetTextureBlendMode(ui->skin.game_background, SDL_BLENDMODE_BLEND);
+      }
+    }
+
+    char* border = get_ini_value(&p, "graphics", "custom_border");
+    if (border && !strcmp(border, "true")) {
+      ui->skin.custom_border = true;
+    } else ui->skin.custom_border = false;
+
+    if (ui->skin.custom_border) {
+      format_str(name, 120, "%s/border.png", dir_name);
+      ui->skin.border = load_png(ui, name);
+      if (ui->skin.border == NULL) {
+        ui->skin.custom_border = false;
+      } else {
+        SDL_SetTextureBlendMode(ui->skin.border, SDL_BLENDMODE_BLEND);
+      }
+    }
+
+    format_str(name, 120, "%s/background.png", dir_name);
+    ui->skin.background = load_png(ui, name);
+    if (ui->skin.border == NULL) {
+      ui->skin.custom_background = false;
+    } else {
+      ui->skin.custom_background = true;
+      SDL_SetTextureBlendMode(ui->skin.background, SDL_BLENDMODE_BLEND);
+    }
+
+    char* block = get_ini_value(&p, "graphics", "custom_block");
+    if (block && !strcmp(block, "true")) {
+      ui->skin.custom_block = true;
+    } else ui->skin.custom_block = false;
+
+    if (ui->skin.custom_block) {
+      format_str(name, 120, "%s/blocks.png", dir_name);
+      ui->skin.blocks = load_png(ui, name);
+      SDL_SetTextureBlendMode(ui->skin.blocks, SDL_BLENDMODE_BLEND);
+    }
+    
+
+    char* clear_count = get_ini_value(&p, "sounds", "clear_sound_count");
+    if (clear_count) {
+      ui->skin.clear_sound_count = atoi(clear_count);
+      free(clear_count);
+    }
+    
+    if (ui->skin.clear_sound_count > 0) {
+      ui->skin.clear_sound = 
+        (audio_clip_t *)malloc(sizeof(audio_clip_t) * ui->skin.clear_sound_count);
+      load_multiple_audio("clear", dir_name, 
+          &ui->skin.clear_sound_count, ui->skin.clear_sound);
+    }
+
+    char* tetris_count = get_ini_value(&p, "sounds", "four_clear_sound_count");
+    if (tetris_count) {
+      ui->skin.tetris_sound_count = atoi(tetris_count);
+      free(tetris_count);
+    }
+
+    if (ui->skin.tetris_sound_count > 0) {
+      ui->skin.tetris_sound = 
+        (audio_clip_t *)malloc(sizeof(audio_clip_t) * ui->skin.tetris_sound_count);
+      load_multiple_audio("four_clear", dir_name, 
+          &ui->skin.tetris_sound_count, ui->skin.tetris_sound);
+    }
+  }
+
+  format_str(name, 120, "%s/lock.wav", dir_name);
+  SDL_LoadWAV(name, &ui->skin.lock_sound.wav_spec,
       &ui->skin.lock_sound.wav_buffer, &ui->skin.lock_sound.wav_length);
 
-  SDL_LoadWAV("data/tetris.wav", &ui->skin.tetris_sound.wav_spec, 
-    &ui->skin.tetris_sound.wav_buffer, &ui->skin.tetris_sound.wav_length);
-  
-  if (ui->skin.image_background) {
-    ui->skin.game_background = load_png(ui, "data/loli.png");
-    SDL_SetTextureAlphaMod(ui->skin.game_background, 40);
-    SDL_SetTextureBlendMode(ui->skin.game_background, SDL_BLENDMODE_BLEND);
-  }
+  //free(dir_name);
 }
 
 void draw_text(cetris_ui *ui, char* string, int x, int y, TTF_Font* font, SDL_Color color) {
@@ -117,21 +221,31 @@ void draw_image(cetris_ui *ui, SDL_Texture *i, int x, int y, int width, int heig
   SDL_RenderCopy(ui->render, i, NULL, &dest);
 }
 
-void draw_block(cetris_ui *ui, int x, int y, int width, int height, SDL_Color c, SDL_Color off) {
-  SDL_Rect b = {x + 1, y + 1, width - 1, height - 1};
-  SDL_SetRenderDrawColor(ui->render, c.r, c.g, c.b, c.a);
-  SDL_RenderFillRect(ui->render, &b);
-  SDL_RenderDrawRect(ui->render, &b);
-  SDL_SetRenderDrawColor(ui->render, off.r, off.g, off.b, off.a);
-  b.y--; b.x--; b.w+=2; b.h+=2;
-  SDL_RenderDrawRect(ui->render, &b);
+void draw_block(cetris_ui *ui, int x, int y, int width, int height, int mino, int alpha, SDL_Color off) {
+  if (ui->skin.custom_block) {
+    SDL_Rect b = {x + 1, y + 1, width, height};
+    SDL_Rect block = {(mino + 2) * 32, 0, 32, 32};
+    SDL_SetTextureAlphaMod(ui->skin.blocks, alpha);
+    SDL_RenderCopy(ui->render, ui->skin.blocks, &block, &b);
+  } else {
+    SDL_Rect b = {x + 1, y + 1, width - 1, height - 1};
+    SDL_Color c = mino_colors[mino];
+    SDL_SetRenderDrawColor(ui->render, c.r, c.g, c.b, alpha);
+    SDL_RenderFillRect(ui->render, &b);
+    SDL_RenderDrawRect(ui->render, &b);
+    SDL_SetRenderDrawColor(ui->render, off.r, off.g, off.b, off.a);
+    b.y--; b.x--; b.w+=2; b.h+=2;
+    SDL_RenderDrawRect(ui->render, &b);
+  }
 }
 
 void draw_board(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y, int w, int h) {
   SDL_SetRenderTarget(ui->render, m);
   SDL_RenderClear(ui->render);
 
-  SDL_Rect background = {0, 0, w, h + 5};
+  int y_offset = 10;
+
+  SDL_Rect background = {0, 0, w, h + y_offset};
   
   if (ui->skin.image_background) {
     SDL_RenderCopy(ui->render, ui->skin.game_background, NULL, &background);
@@ -147,7 +261,6 @@ void draw_board(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y
   SDL_SetRenderDrawColor(ui->render, board->scheme.main.r, 
       board->scheme.main.g, board->scheme.main.b, board->scheme.main.a);
 
-  int y_offset = 5;
 
   int board_x = board->game.config.board_x;
   int board_y = board->game.config.board_y;
@@ -158,7 +271,7 @@ void draw_board(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y
 
   for (int s = 0; s < board_x + 1; s++) {
     int rx = (s * block_width);
-    SDL_RenderDrawLine(ui->render, rx, 1, rx, h + 5);
+    SDL_RenderDrawLine(ui->render, rx, 1, rx, h + y_offset);
   }
 
   for (int j = 0; j < board->game.config.board_visible + 1; j++) {
@@ -177,10 +290,9 @@ void draw_board(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y
 
         int block_x = (j * block_width);
         int block_y = (y_offset + ((s - board_visible) * block_height));
-        SDL_Color mino_color = mino_colors[(board->game.board[j][s] >> 5)];
 
         draw_block(ui, block_x, block_y, block_width, block_height,
-            mino_color, board->scheme.off);
+            (board->game.board[j][s] >> 5), 255, board->scheme.off);
       }
     }
   }
@@ -192,16 +304,13 @@ void draw_board(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y
           int block_x = ((j + board->game.current.pos.x) * block_width);
           int block_y = y_offset + ((s + board->game.current.pos.y) - board_visible) * block_height;
 
-          SDL_Color mino_color = mino_colors[board->game.current.t];
           draw_block(ui, block_x, block_y, block_width, block_height,
-              mino_color, board->scheme.off);
+              board->game.current.t, 255, board->scheme.off);
           
           int ghost_y = y_offset + ((s + board->game.current.ghost_y) - board_visible) * block_height;
           if (ghost_y != block_y) {
-            mino_color.a -= 150;
-
             draw_block(ui, block_x, ghost_y, block_width, block_height,
-                mino_color, board->scheme.off);
+                board->game.current.t, 120, board->scheme.off);
           }
         }
       }
@@ -213,22 +322,24 @@ void draw_board(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y
 
   SDL_SetRenderTarget(ui->render, NULL);
 
-  SDL_Rect dest = {x, y, w, h};
-  //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE); 
+  SDL_Rect dest = {x, y, w, h + y_offset};
   SDL_RenderCopy(ui->render, m, NULL, &dest);  
+
+  if (ui->skin.custom_border) {
+    SDL_Rect border = {x - 110, y - 35, 380, 600};
+    SDL_RenderCopy(ui->render, ui->skin.border, NULL, &border);
+  }
 }
 
 void draw_held_piece(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y, int w, int h) {
   if (w < 8) return; 
   if (h < 8) return;
 
-  SDL_SetRenderTarget(ui->render, m);
-  SDL_RenderClear(ui->render);
+  //SDL_SetRenderTarget(ui->render, m);
+  //SDL_RenderClear(ui->render);
 
-  SDL_RenderClear(ui->render);
-
-  int block_width = (w - 4) / 4;
-  int block_height = (h - 4) / 4;
+  int block_width = (w - 4) / 5;
+  int block_height = (h - 4) / 5;
 
   // make sure blocks are square
   if (block_width > block_height) {
@@ -242,8 +353,8 @@ void draw_held_piece(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, 
   SDL_SetRenderDrawColor(ui->render, board->scheme.off.r, 
       board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
-  SDL_RenderFillRect(ui->render, &hold);
-  SDL_RenderDrawRect(ui->render, &hold);
+  //SDL_RenderFillRect(ui->render, &hold);
+  //SDL_RenderDrawRect(ui->render, &hold);
 
   if (board->game.piece_held) {
     for (int s = 0; s < 4; s++) {
@@ -252,34 +363,37 @@ void draw_held_piece(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, 
           int block_x = 2 + ((j) * block_width);
           int block_y = (s * block_height);
           if (board->game.held.t == MINO_I) {
-            block_y += block_height / 2;
-          } else if (board->game.held.t != MINO_O) {
-            block_x += block_width / 2;
+            block_x += (int)(block_width / 1.5f);
+            block_y += block_height;
+          } else {
+            block_x += block_width;
+            block_y += (int)(block_height);
+          }
+          if (board->game.held.t == MINO_O) {
+            block_x -= block_width / 2;
           }
 
-          SDL_Color mino_color = mino_colors[board->game.held.t];
-          draw_block(ui, block_x, block_y, block_width, block_height,
-              mino_color, board->scheme.off);
+          draw_block(ui, x + block_x, y + block_y, block_width, block_height,
+              board->game.held.t, 255, board->scheme.off);
 
         }
       }
     }
   }
 
-  SDL_SetRenderTarget(ui->render, NULL);
+  //SDL_SetRenderTarget(ui->render, NULL);
 
-  SDL_Rect dest = {x, y, w, h};
-  //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE);
-  SDL_RenderCopy(ui->render, m, NULL, &dest); 
+  //SDL_Rect dest = {x, y, w, h};
+  //SDL_RenderCopy(ui->render, m, NULL, &dest); 
 }
 
 void draw_piece_queue(cetris_ui* ui, SDL_Texture *m, game_board_t* board, int x, int y, int w, int h) {
   if (w < 8) return;
   if (h < 32) return;
 
-  SDL_SetRenderTarget(ui->render, m);
+  //SDL_SetRenderTarget(ui->render, m);
 
-  SDL_RenderClear(ui->render);
+  //SDL_RenderClear(ui->render);
 
   int block_width = ((w - 4) / 4);
   int block_height = ((h - 5) / 5) / 3;
@@ -291,12 +405,12 @@ void draw_piece_queue(cetris_ui* ui, SDL_Texture *m, game_board_t* board, int x,
     block_height = block_width;
   }
 
-  SDL_SetRenderDrawColor(ui->render, board->scheme.off.r, 
-      board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
+  //SDL_SetRenderDrawColor(ui->render, board->scheme.off.r, 
+  //    board->scheme.off.g, board->scheme.off.b, board->scheme.off.a);
 
-  SDL_Rect queue = {0, 0, w, h};
-  SDL_RenderFillRect(ui->render, &queue);
-  SDL_RenderDrawRect(ui->render, &queue);
+  //SDL_Rect queue = {0, 0, w, h};
+  //SDL_RenderFillRect(ui->render, &queue);
+  //SDL_RenderDrawRect(ui->render, &queue);
 
   for (int i = 0; i < 5; i++) {
     int index = (board->game.current_index + i);
@@ -320,20 +434,18 @@ void draw_piece_queue(cetris_ui* ui, SDL_Texture *m, game_board_t* board, int x,
             block_x += block_width / 2;
           }
 
-          SDL_Color mino_color = mino_colors[mino];
-          draw_block(ui, block_x, block_y, block_width, block_height,
-              mino_color, board->scheme.off);
+          draw_block(ui, x + block_x, y + block_y, block_width, block_height,
+              mino, 255, board->scheme.off);
 
         }
       }
     }
   }
 
-  SDL_SetRenderTarget(ui->render, NULL);
+  //SDL_SetRenderTarget(ui->render, NULL);
 
-  SDL_Rect dest = {x, y, w, h};
-  //SDL_RenderCopyEx(render, m, NULL, &dest, 0, NULL, SDL_FLIP_NONE);
-  SDL_RenderCopy(ui->render, m, NULL, &dest);  
+  //SDL_Rect dest = {x, y, w, h};
+  //SDL_RenderCopy(ui->render, m, NULL, &dest);  
 
 }
 
@@ -361,12 +473,21 @@ void draw(cetris_ui* ui) {
 
   SDL_RenderClear(ui->render);
 
+  if (ui->skin.custom_background) {
+    int w, h;
+    SDL_QueryTexture(ui->skin.background, NULL, NULL, &w, &h);
+    
+    int ratio = w / W;
+    SDL_Rect back = {0, 0, ratio * W, ratio * H};
+    SDL_RenderCopy(ui->render, ui->skin.background, &back, NULL);
+  }
+
   switch (ui->current_game) {
     case SOLO:
       //draw_image(ui, ui->solo.background, 0, 0, W, H);
       draw_board(ui, ui->solo.main, &ui->solo.game_board, (W / 2) - 125, (H / 2) - 250, 250, 500);
       draw_held_piece(ui, ui->solo.hold, &ui->solo.game_board, (W / 2) - 230, (H / 2) - 250, 100, 100);
-      draw_piece_queue(ui, ui->solo.queue, &ui->solo.game_board, (W / 2) + 130, (H / 2) - 250, 100, 450);
+      draw_piece_queue(ui, ui->solo.queue, &ui->solo.game_board, (W / 2) + 150, (H / 2) - 250, 100, 450);
       draw_timer(ui, &ui->solo.game_board, 20, 20);
       break;
   }
@@ -401,29 +522,53 @@ void load_config(cetris_ui *ui, game_board_t *board) {
     board->conf.das_arr = arr;
 
     char* drop_delay = get_ini_value(&p, "game", "drop_delay");
-    if (drop_delay) board->conf.drop_period = atoi(drop_delay);
+    if (drop_delay) {
+      board->conf.drop_period = atoi(drop_delay);
+      //free(drop_delay);
+    }
     
     char* next_piece_delay = get_ini_value(&p, "game", "next_piece_delay");
-    if (next_piece_delay) board->conf.next_piece_delay = atoi(next_piece_delay);
+    if (next_piece_delay) {
+      board->conf.next_piece_delay = atoi(next_piece_delay);
+      //free(next_piece_delay);
+    }
 
     char* lock_delay = get_ini_value(&p, "game", "lock_delay");
-    if (lock_delay) board->conf.lock_delay = atoi(lock_delay);
+    if (lock_delay) {
+      board->conf.lock_delay = atoi(lock_delay);
+      //free(lock_delay);
+    }
 
     char* force_lock = get_ini_value(&p, "game", "force_lock");
-    if (force_lock) board->conf.force_lock = atoi(force_lock);
+    if (force_lock) {
+      board->conf.force_lock = atoi(force_lock);
+      //free(force_lock);
+    }
 
     char* wait_on_clear = get_ini_value(&p, "game", "wait_on_clear");
-    if (wait_on_clear) board->conf.wait_on_clear = atoi(wait_on_clear);
+    if (wait_on_clear && !strcmp(wait_on_clear, "true")) {
+      board->conf.wait_on_clear = true;
+    } else board->conf.wait_on_clear = false;
 
     char* line_delay_clear = get_ini_value(&p, "game", "line_clear_delay");
-    if (line_delay_clear) board->conf.line_delay_clear = atoi(line_delay_clear);
+    if (line_delay_clear) {
+      board->conf.line_delay_clear = atoi(line_delay_clear);
+      //free(line_delay_clear);
+    }
 
     char *dark = get_ini_value(&p, "ui", "dark_mode");
-    if (dark && atoi(dark)) {
-      ui->colors = dark_mode;
+    if (dark) {
+      if (!strcmp(dark, "true")) {
+        ui->colors = dark_mode;
+      }
     } else {
       ui->colors = light_mode;
     }
+
+    char *skin = get_ini_value(&p, "ui", "skin");
+    if (skin) {
+      ui->config.skin_name = skin;
+    } else ui->config.skin_name = "default";
   }
 }
 
@@ -431,10 +576,10 @@ void load_solo(cetris_ui *ui) {
   load_config(ui, &ui->solo.game_board);
   ui->solo.game_board.scheme = ui->colors;
 
-  ui->solo.main = SDL_CreateTexture(ui->render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 251, 506);
+  ui->solo.main = SDL_CreateTexture(ui->render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 251, 513);
   ui->solo.queue = SDL_CreateTexture(ui->render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 450);
   ui->solo.hold = SDL_CreateTexture(ui->render, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 100, 100);
-  //ui->solo.background = load_png(ui, "data/background.png");
+  SDL_SetTextureBlendMode(ui->solo.hold, SDL_BLENDMODE_BLEND);
   ui->solo.game_board.count_down = 3;
 
   init_game(&ui->solo.game_board.game, &ui->solo.game_board.conf);
@@ -492,11 +637,11 @@ void handle_game_events(cetris_ui *ui, game_board_t *board) {
   if (board->game.line_event > 0) {
     int index;
     if (ui->skin.random_audio) {
-      index = rand() % 5;
+      index = rand() % ui->skin.clear_sound_count;
     } else {
       index = board->game.line_combo - 1;
     }
-    if (index > ui->skin.clear_sound_count) 
+    if (index >= ui->skin.clear_sound_count) 
       index = ui->skin.clear_sound_count - 1;
 
     SDL_QueueAudio(ui->audio_device, ui->skin.clear_sound[index].wav_buffer,  
@@ -510,8 +655,9 @@ void handle_game_events(cetris_ui *ui, game_board_t *board) {
   }
 
   if (board->game.tetris_event > 0) {
-    SDL_QueueAudio(ui->audio_device, ui->skin.tetris_sound.wav_buffer,  
-        ui->skin.tetris_sound.wav_length);
+    int index = rand() % ui->skin.tetris_sound_count;
+    SDL_QueueAudio(ui->audio_device, ui->skin.tetris_sound[index].wav_buffer,  
+        ui->skin.tetris_sound[index].wav_length);
 
     SDL_PauseAudioDevice(ui->audio_device, 0);
     board->game.tetris_event--;
@@ -528,17 +674,12 @@ void handle_game_events(cetris_ui *ui, game_board_t *board) {
 
 int main(void) {
   cetris_ui ui;
+  memset(&ui, 0, sizeof(cetris_ui));
   
   setup_sdl(&ui);
-
-  ui.skin.clear_sound_count = 5;
-  ui.skin.random_audio = true;
-  ui.skin.image_background = true;
-  load_skin(&ui);
-
-  ui.current_game = SOLO;
-
   load_solo(&ui);
+  load_skin(&ui);
+  ui.current_game = SOLO;
    
   SDL_Event e;
   for(;;) {
