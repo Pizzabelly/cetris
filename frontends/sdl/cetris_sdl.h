@@ -47,16 +47,13 @@ typedef struct {
   audio_clip_t *tetris_sound;
   audio_clip_t lock_sound;
  
-  bool custom_block;
   SDL_Texture *blocks;
-
-  bool image_background;
   SDL_Texture *game_background;
+  SDL_Texture *overlay_top;
+  SDL_Texture *overlay_middle;
+  SDL_Texture *overlay_bottom;
 
-  bool custom_border;
   SDL_Texture *border;
-  
-  bool custom_background;
   SDL_Texture *background;
 
 } cetris_skin_t;
