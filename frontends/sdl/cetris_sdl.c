@@ -14,8 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <dirent.h>
-#include <errno.h>
+#include <sys/stat.h>
 
 
 #include <time.h>
@@ -94,11 +93,10 @@ void load_multiple_audio(char* name, char* dir_name, int *count, audio_clip_t* l
 void load_skin(cetris_ui *ui) {
   char *dir_name = malloc(100);
   format_str(dir_name, 100, "skins/%s", ui->config.skin_name);
-  DIR* dir = opendir(dir_name);
+  
+  struct stat sb;
 
-  if (dir) {
-    closedir(dir);
-  } else if (ENOENT == errno) {
+  if (!(stat(dir_name, &sb) == 0 && (sb.st_mode & S_IFDIR))) {
     dir_name = "skins/default";
   }
 
