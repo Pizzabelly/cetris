@@ -30,11 +30,11 @@ typedef struct {
 typedef uint8_t piece_matrix[4];
 
 enum {
-  MINO_O,
-  MINO_I,
-  MINO_S,
   MINO_Z,
   MINO_L,
+  MINO_O,
+  MINO_S,
+  MINO_I,
   MINO_J,
   MINO_T
 };

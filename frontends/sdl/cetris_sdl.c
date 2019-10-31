@@ -119,26 +119,14 @@ void load_skin(cetris_ui *ui) {
     format_str(name, 120, "%s/playboard.png", dir_name);
     ui->skin.game_background = load_png(ui, name);
     if (ui->skin.game_background != NULL) {
-      SDL_SetTextureAlphaMod(ui->skin.game_background, 100);
+      SDL_SetTextureAlphaMod(ui->skin.game_background, 120);
       SDL_SetTextureBlendMode(ui->skin.game_background, SDL_BLENDMODE_BLEND);
-    }
-
-    format_str(name, 120, "%s/overlay_top.png", dir_name);
-    ui->skin.overlay_top = load_png(ui, name);
-    if (ui->skin.overlay_top != NULL) {
-      SDL_SetTextureBlendMode(ui->skin.overlay_top, SDL_BLENDMODE_BLEND);
     }
 
     format_str(name, 120, "%s/overlay_middle.png", dir_name);
     ui->skin.overlay_middle = load_png(ui, name);
     if (ui->skin.overlay_middle != NULL) {
       SDL_SetTextureBlendMode(ui->skin.overlay_middle, SDL_BLENDMODE_BLEND);
-    }
-
-    format_str(name, 120, "%s/overlay_bottom.png", dir_name);
-    ui->skin.overlay_bottom = load_png(ui, name);
-    if (ui->skin.overlay_bottom != NULL) {
-      SDL_SetTextureBlendMode(ui->skin.overlay_bottom, SDL_BLENDMODE_BLEND);
     }
 
     format_str(name, 120, "%s/border.png", dir_name);
@@ -216,14 +204,14 @@ void draw_image(cetris_ui *ui, SDL_Texture *i, int x, int y, int width, int heig
 
 void draw_block(cetris_ui *ui, int x, int y, int width, int height, int mino, int alpha, SDL_Color off) {
   if (ui->skin.blocks) {
-    SDL_Rect b = {x + 1, y + 1, width, height};
+    SDL_Rect b = {x, y, width, height};
     SDL_Rect block = {(mino + 2) * 32, 0, 32, 32};
     SDL_SetTextureAlphaMod(ui->skin.blocks, alpha);
     SDL_RenderCopy(ui->render, ui->skin.blocks, &block, &b);
   } else {
     SDL_Rect b = {x + 1, y + 1, width - 1, height - 1};
     SDL_Color c = mino_colors[mino];
-    SDL_SetRenderDrawColor(ui->render, c.r, c.g, c.b, alpha);
+    //SDL_SetRenderDrawColor(ui->render, c.r, c.g, c.b, alpha);
     SDL_RenderFillRect(ui->render, &b);
     SDL_RenderDrawRect(ui->render, &b);
     SDL_SetRenderDrawColor(ui->render, off.r, off.g, off.b, off.a);
@@ -262,20 +250,15 @@ void draw_board(cetris_ui *ui, SDL_Texture *m, game_board_t* board, int x, int y
   int block_width = w / board->game.config.board_x;
   int block_height = h / board->game.config.board_visible;
 
-  if (ui->skin.overlay_top && 
-      ui->skin.overlay_middle && ui->skin.overlay_bottom) {
+  if (ui->skin.overlay_middle) {
     for (int j = 0; j < board->game.config.board_visible + 1; j++) {
       if (j == 0) {
-        SDL_Rect overlay = {0, 0, block_width * 10, block_height};
-        SDL_Rect cutoff = {0, block_height - y_offset, block_width * 10, block_height};
-        SDL_RenderCopy(ui->render, ui->skin.overlay_top, &cutoff, &overlay);
+        SDL_Rect overlay = {0, y_offset - block_height, (block_width * 10), block_height};
+        //SDL_Rect cutoff = {0, block_height - y_offset, (block_width * 10), block_height};
+        SDL_RenderCopy(ui->render, ui->skin.overlay_middle, NULL, &overlay);
       } else {
-        SDL_Rect overlay = {0, y_offset + ((j - 1) * block_height) + 2, block_width * 10, block_height};
-        if (j == board->game.config.board_visible) {
-          SDL_RenderCopy(ui->render, ui->skin.overlay_bottom, NULL, &overlay);
-        } else {
-          SDL_RenderCopy(ui->render, ui->skin.overlay_middle, NULL, &overlay);
-        }
+        SDL_Rect overlay = {0, y_offset + ((j - 1) * block_height), (block_width * 10), block_height};
+        SDL_RenderCopy(ui->render, ui->skin.overlay_middle, NULL, &overlay);
       }
     }
   } else {
