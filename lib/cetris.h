@@ -163,7 +163,7 @@ struct cetris_game {
 CETRIS_EXPORT bool update_game_tick(cetris_game *g);
 CETRIS_EXPORT void move_piece(cetris_game *g, uint8_t move);
 CETRIS_EXPORT void unhold_move(cetris_game* g, uint8_t move);
-CETRIS_EXPORT void init_game(cetris_game *g, cetris_config *c);
+CETRIS_EXPORT void init_game(cetris_game *g);
 CETRIS_EXPORT void hold_piece(cetris_game *g);
 CETRIS_EXPORT const piece_matrix default_matrices[7];
 

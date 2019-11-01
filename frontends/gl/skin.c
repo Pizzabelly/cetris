@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 
 #include "drawable.h"
+#include "audio.h"
 #include "skin.h"
 
 #include <string.h>
@@ -13,6 +14,16 @@
 #else
 #define format_str snprintf
 #endif
+
+void load_element(drawable_t* drawable, char* file_name, char* dir_name) {
+  char file[125];
+  format_str(file, 125, "%s/%s", dir_name, file_name);
+  glGenTextures(1, &drawable->texture);
+  glBindTexture(GL_TEXTURE_2D, drawable->texture);
+  new_rectangle(drawable);
+  load_image(file, drawable);
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
 
 void load_skin(char* name, cetris_skin_t* skin) {
   char *dir_name = malloc(100);
@@ -27,25 +38,30 @@ void load_skin(char* name, cetris_skin_t* skin) {
   if (!(stat(dir_name, &sb) == 0 && S_ISDIR(sb.st_mode)))
     dir_name = "skins/default";
 #endif
-  
-  char file[125];
 
-  format_str(file, 125, "%s/blocks.png", dir_name);
-  glGenTextures(1, &skin->block.texture);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, skin->block.texture);
-  new_rectangle(&skin->block);
-  if (load_image(file, &skin->block)) {
-    skin->has_block_texture = true;
-  } else skin->has_block_texture = false;
-  glBindTexture(GL_TEXTURE_2D, 0);
 
-  format_str(file, 125, "%s/overlay.png", dir_name);
-  glGenTextures(1, &skin->overlay.texture);
-  glBindTexture(GL_TEXTURE_2D, skin->overlay.texture);
-  new_rectangle(&skin->overlay);
-  if (load_image(file, &skin->overlay)) {
-    skin->has_overlay_texture = true;
-  } else skin->has_overlay_texture = false;
-  glBindTexture(GL_TEXTURE_2D, 0);
+  load_element(&skin->block, "blocks.png", dir_name);
+  load_element(&skin->overlay, "overlay.png", dir_name);
+  load_element(&skin->background, "background.png", dir_name);
+  load_element(&skin->playboard, "playboard.png", dir_name);
+  load_element(&skin->border, "border.png", dir_name);
+
+  int clear_count = 5;
+  skin->clear_sound = 
+    (audio_clip_t *)malloc(sizeof(audio_clip_t) * 5);
+  load_multiple_audio("clear", dir_name, 
+      &clear_count, skin->clear_sound);
+
+  int tetris_count = 5;
+  skin->tetris_sound = 
+    (audio_clip_t *)malloc(sizeof(audio_clip_t) * 5);
+  load_multiple_audio("four_clear", dir_name, 
+      &tetris_count, skin->tetris_sound);
+
+  format_str(name, 120, "%s/lock.wav", dir_name);
+  SDL_LoadWAV(name, &skin->lock_sound.wav_spec,
+      &skin->lock_sound.wav_buffer, &skin->lock_sound.wav_length);
+
+
 }

@@ -225,8 +225,8 @@ static void lock_current(cetris_game *g) {
     g->highest_line = g->current.pos.y;
   }
 
-  g->current.locked = true;
   g->lock_event++;
+  g->current.locked = true;
   update_board(g);
 }
 
@@ -376,11 +376,10 @@ void update_board(cetris_game *g) {
   make_ghosts(g);
 
   if (g->current.locked && !g->next_piece_tick) {
-    
     if (lines_cleared > 0) {
       g->next_piece_tick = g->tick + g->config.next_piece_delay;
     } else {
-      g->next_piece_tick = g->tick;
+      next_piece(g);
       g->line_combo = 0;
     }
   }
@@ -477,40 +476,35 @@ CETRIS_EXPORT void move_piece(cetris_game *g, uint8_t move) {
 
 }
 
-CETRIS_EXPORT void init_game(cetris_game *g, cetris_config* c) {
+CETRIS_EXPORT void init_game(cetris_game *g) {
     srand(time(NULL));
 
 #ifdef BUILD_TESTS
   //apply_test_board(g, TSPIN_NO_LINES);
-#endif
-
-  cetris_config config;
-  if (!c) config = g->config;
-  else config = *c;  
-
+#endif   
+  
   // check for config errorsa
-  if (config.next_piece_delay < config.line_delay_clear)
-    config.next_piece_delay = config.line_delay_clear;
+  if (g->config.next_piece_delay < g->config.line_delay_clear)
+    g->config.next_piece_delay = g->config.line_delay_clear;
 
-  if (!config.wait_on_clear)
-    config.next_piece_delay = 0;
+  if (!g->config.wait_on_clear)
+    g->config.next_piece_delay = 0;
 
-  memset(g, 0, sizeof(cetris_game));
-  memcpy(&g->config, &config, sizeof(cetris_config));
+  memset(g, 0, sizeof(cetris_game) - sizeof(cetris_config));
 
-  g->board = (uint8_t **)malloc(sizeof(uint8_t *) * config.board_x);
-  for (int i = 0; i < config.board_x; i++) {
-    g->board[i] = (uint8_t *)malloc(sizeof(uint8_t) * config.board_y);
-    memset(g->board[i], 0, sizeof(uint8_t) * config.board_y);
+  g->board = (uint8_t **)malloc(sizeof(uint8_t *) * g->config.board_x);
+  for (int i = 0; i < g->config.board_x; i++) {
+    g->board[i] = (uint8_t *)malloc(sizeof(uint8_t) * g->config.board_y);
+    memset(g->board[i], 0, sizeof(uint8_t) * g->config.board_y);
   }
 
-  g->line_remove_tick = (ctick *)malloc(sizeof(ctick) * config.board_y);
-  memset(g->line_remove_tick, 0, sizeof(ctick) * config.board_y);
+  g->line_remove_tick = (ctick *)malloc(sizeof(ctick) * g->config.board_y);
+  memset(g->line_remove_tick, 0, sizeof(ctick) * g->config.board_y);
 
   g->waiting = true;
-  g->level = config.starting_level;
+  g->level = g->config.starting_level;
 
-  g->highest_line = config.board_y;
+  g->highest_line = g->config.board_y;
 
   for (int i = 0; i < 7; i++) {
     g->next_queue[i] = i;
@@ -575,9 +569,9 @@ CETRIS_EXPORT bool update_game_tick(cetris_game *g) {
   }
 #endif  
 
-  if (g->config.win_condition(g)) g->game_over = true;
-
   if (did_move) update_board(g);
+
+  if (g->config.win_condition(g)) g->game_over = true;
 
   return true;
 }

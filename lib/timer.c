@@ -43,7 +43,7 @@ CETRIS_EXPORT void cetris_start_game(cetris_game *g) {
   HANDLE thread = CreateThread(NULL, 0, cetris_game_loop, g, 0, NULL);
 }
 CETRIS_EXPORT void cetris_stop_game(cetris_game *g) {
-  init_game(g, NULL);
+  init_game(g);
 }
 #else
 #include <pthread.h>
@@ -89,6 +89,6 @@ CETRIS_EXPORT void cetris_start_game(cetris_game *g) {
   pthread_create(&thread, NULL, cetris_game_loop, (void*)g);
 }
 CETRIS_EXPORT void cetris_stop_game(cetris_game *g) {
-  init_game(g, NULL);
+  init_game(g);
 }
 #endif

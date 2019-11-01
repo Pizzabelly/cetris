@@ -20,13 +20,6 @@ GLuint elements[] = {
   2, 3, 0
 };
 
-void calc_pos(GLfloat *rect, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
-  rect[0] = rect[12] = -1.0f + (x / 200.0f);
-  rect[1] = rect[5] = 1.0f - (y / 400.0f); 
-  rect[9] = rect[13] = rect[1] - (h) / 400.0f;
-  rect[4] = rect[8] = rect[0] + (w) / 200.0f;
-}
-
 bool load_image(char* file_name, drawable_t *drawable) {
   int w, h, channel;
   unsigned char *data = stbi_load(file_name, &w, &h, &channel, STBI_rgb_alpha);
@@ -45,19 +38,30 @@ bool load_image(char* file_name, drawable_t *drawable) {
   return true;
 }
 
+void crop_texture(drawable_t *drawable, int h, int w) {
+  drawable->vertices[2] = drawable->vertices[14] = w;
+  drawable->vertices[3] = drawable->vertices[7] = h;
+  drawable->vertices[6] = drawable->vertices[10] = 1.0f;
+  drawable->vertices[15] = drawable->vertices[11] = h;
+}
+
 void set_block_texture(drawable_t *drawable, uint8_t mino) {
   GLfloat index = (mino + 2) * .0625f;
   drawable->vertices[2] = drawable->vertices[14] = index;
   drawable->vertices[6] = drawable->vertices[10] = index + .0625f;
-  //vertices[5] = vertices[13] = vertices[21] = vertices[29] = opacity;
 }
 
-void update_rect(drawable_t *drawable, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
-  calc_pos(drawable->vertices, x, y, w, h);
+void update_rect(drawable_t *drawable, GLfloat x, GLfloat y, 
+    GLfloat w, GLfloat h, GLfloat window_width, GLfloat window_height) {
+  GLfloat x_ratio = window_width / 2.0f;
+  GLfloat y_ratio = window_height / 2.0f;
+  drawable->vertices[0] = drawable->vertices[12] = -1.0f + (x / x_ratio);
+  drawable->vertices[1] = drawable->vertices[5] = 1.0f - (y / y_ratio); 
+  drawable->vertices[9] = drawable->vertices[13] = drawable->vertices[1] - (h) / y_ratio;
+  drawable->vertices[4] = drawable->vertices[8] = drawable->vertices[0] + (w) / x_ratio;
 
   glBindBuffer(GL_ARRAY_BUFFER, drawable->vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), drawable->vertices, GL_DYNAMIC_DRAW);
-  //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 }
 
 void new_rectangle(drawable_t* drawable) {
