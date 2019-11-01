@@ -119,6 +119,7 @@ int main(void) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  glClearColor(0.21f, 0.12f, 0.11f, 1.0f);
   glEnable(GL_DEPTH_TEST);
   glClearDepth(1.0); 
   glDepthFunc(GL_LEQUAL);
@@ -142,15 +143,13 @@ int main(void) {
 
   int delay = 1000/FRAME_RATE;
   for (;;) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+ 
     while(SDL_PollEvent(&e)) {
       handle_key(e, &ui.keys, &ui.board);
     }
-
-    glClearColor(0.21f, 0.12f, 0.11f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //draw_current(&ui);
-    draw_tetris_board(&ui);
+    
+    draw_tetris_board(&ui);  
 
     SDL_GL_SwapWindow(window);
 

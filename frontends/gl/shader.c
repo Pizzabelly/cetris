@@ -2,20 +2,16 @@
 
 const char *vertex_shader_source = "#version 450 core\n"
     "layout (location = 0) in vec2 aPos;\n"
-    "layout (location = 1) in vec4 aColor;\n"
-    "layout (location = 2) in vec2 aTexCoord;\n"
-    "out vec4 ourColor;\n"
+    "layout (location = 1) in vec2 aTexCoord;\n"
     "out vec2 TexCoord;\n"
     "void main()\n"
     "{\n"
     "   gl_Position = vec4(aPos, 0.0, 1.0);\n"
-    "   ourColor = aColor;\n"
     "   TexCoord = aTexCoord;\n"
     "}\0";
 
 const char *fragment_shader_source = "#version 450 core\n"
     "out vec4 FragColor;\n"
-    "in vec4 ourColor;\n"
     "in vec2 TexCoord;\n"
     "uniform sampler2D tex;\n"
     "vec4 layer(vec4 foreground, vec4 background) {\n"

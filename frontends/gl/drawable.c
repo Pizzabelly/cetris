@@ -8,11 +8,11 @@
 #include <stdlib.h>
 
 GLfloat vertices[] = {
-  //  Position      Color             Texcoords
-  0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // Top-left
-  0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, // Top-right
-  0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // Bottom-right
-  0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f  // Bottom-left
+  //  Position             Texcoords
+  0.0f,  0.0f, 0.0f, 0.0f, // Top-left
+  0.0f,  0.0f, 1.0f, 0.0f, // Top-right
+  0.0f,  0.0f, 1.0f, 1.0f, // Bottom-right
+  0.0f,  0.0f, 0.0f, 1.0f  // Bottom-left
 };
 
 GLuint elements[] = {
@@ -21,10 +21,10 @@ GLuint elements[] = {
 };
 
 void calc_pos(GLfloat *rect, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
-  rect[0] = rect[24] = -1.0f + (x / 200.0f);
-  rect[1] = rect[9] = 1.0f - (y / 400.0f); 
-  rect[17] = rect[25] = rect[1] - (h) / 400.0f;
-  rect[8] = rect[16] = rect[0] + (w) / 200.0f;
+  rect[0] = rect[12] = -1.0f + (x / 200.0f);
+  rect[1] = rect[5] = 1.0f - (y / 400.0f); 
+  rect[9] = rect[13] = rect[1] - (h) / 400.0f;
+  rect[4] = rect[8] = rect[0] + (w) / 200.0f;
 }
 
 bool load_image(char* file_name, drawable_t *drawable) {
@@ -47,8 +47,8 @@ bool load_image(char* file_name, drawable_t *drawable) {
 
 void set_block_texture(drawable_t *drawable, uint8_t mino) {
   GLfloat index = (mino + 2) * .0625f;
-  drawable->vertices[6] = drawable->vertices[30] = index;
-  drawable->vertices[14] = drawable->vertices[22] = index + .0625f;
+  drawable->vertices[2] = drawable->vertices[14] = index;
+  drawable->vertices[6] = drawable->vertices[10] = index + .0625f;
   //vertices[5] = vertices[13] = vertices[21] = vertices[29] = opacity;
 }
 
@@ -77,13 +77,13 @@ void new_rectangle(drawable_t* drawable) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, drawable->ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_DYNAMIC_DRAW);
 
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(2* sizeof(GLfloat)));
-  glEnableVertexAttribArray(1);
+  //glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(2* sizeof(GLfloat)));
+  //glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(1);
 
 }
