@@ -11,7 +11,8 @@ if host_machine.system() == 'windows'
 else
   deps += compiler.find_library('m')
   deps += compiler.find_library('dl')
-  deps += dependency('SDl2')
+  deps += dependency('SDL2')
+  deps += dependency('SDL2_mixer')
 endif
 
 executable('cetris', src,
