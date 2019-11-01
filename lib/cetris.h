@@ -144,7 +144,8 @@ struct cetris_game {
   uint8_t line_combo;
   bool game_over;
 
-    // events 
+  // events 
+  uint8_t move_event;
   uint8_t line_event;
   uint8_t lock_event;
   uint8_t tetris_event;

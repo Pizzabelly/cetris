@@ -47,6 +47,8 @@ void load_skin(char* name, cetris_skin_t* skin) {
   load_element(&skin->playboard, "playboard.png", dir_name);
   load_element(&skin->border, "border.png", dir_name);
 
+  char file[125];
+
   int clear_count = 5;
   skin->clear_sound = 
     (audio_clip_t *)malloc(sizeof(audio_clip_t) * 5);
@@ -59,9 +61,14 @@ void load_skin(char* name, cetris_skin_t* skin) {
   load_multiple_audio("four_clear", dir_name, 
       &tetris_count, skin->tetris_sound);
 
-  format_str(name, 120, "%s/lock.wav", dir_name);
-  SDL_LoadWAV(name, &skin->lock_sound.wav_spec,
+  format_str(file, 125, "%s/lock.wav", dir_name);
+  SDL_LoadWAV(file, &skin->lock_sound.wav_spec,
       &skin->lock_sound.wav_buffer, &skin->lock_sound.wav_length);
+  
+  format_str(file, 125, "%s/move.wav", dir_name);
+  SDL_LoadWAV(file, &skin->move_sound.wav_spec,
+      &skin->move_sound.wav_buffer, &skin->move_sound.wav_length);
+
 
 
 }

@@ -138,6 +138,14 @@ void handle_game_events(cetris_ui *ui, tetris_board_t *board) {
     SDL_PauseAudioDevice(ui->audio_device, 0);
     board->game.lock_event--;
   }
+
+  if (board->game.move_event > 0) {
+    SDL_QueueAudio(ui->audio_device, board->skin.move_sound.wav_buffer, 
+        board->skin.move_sound.wav_length);
+
+    SDL_PauseAudioDevice(ui->audio_device, 0);
+    board->game.move_event--;
+  }
 }
 
 

@@ -13,6 +13,7 @@ typedef struct {
   audio_clip_t *clear_sound;
   audio_clip_t *tetris_sound;
   audio_clip_t lock_sound;
+  audio_clip_t move_sound;
 } cetris_skin_t;
 
 void load_skin(char* name, cetris_skin_t* skin);
