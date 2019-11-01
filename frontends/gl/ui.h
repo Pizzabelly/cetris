@@ -7,10 +7,11 @@
 typedef struct {
   GLfloat block_width;
   GLfloat block_height;
+  GLfloat block_offset;
+
   GLfloat x_offset;
   GLfloat y_offset;
 
-  drawable_t block;
   cetris_game game;
   cetris_config config;
 } tetris_board_t;
@@ -33,6 +34,8 @@ typedef struct {
   cetris_skin_t skin;
 
   tetris_board_t board;
+
+  GLuint shader_program;
 } cetris_ui;
 
 void draw_tetris_board(cetris_ui *ui);

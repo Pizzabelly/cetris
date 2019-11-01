@@ -116,10 +116,17 @@ int main(void) {
   ui.keys = default_keys; 
 
   glViewport(0, 0, 400, 800);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glEnable(GL_DEPTH_TEST);
+  glClearDepth(1.0); 
+  glDepthFunc(GL_LEQUAL);
 
   GLuint shaderProgram = glCreateProgram();
   new_shader_program(&shaderProgram);
   glUseProgram(shaderProgram);
+  ui.shader_program = shaderProgram;
 
   printf("%i\n", tetris_ds_config.board_x); 
   ui.board.config = tetris_ds_config;
@@ -127,12 +134,9 @@ int main(void) {
   init_game(&ui.board.game, &ui.board.config);
   cetris_start_game(&ui.board.game);
   
-  load_tetris_board(&ui.board, 50.0f, 155.0f, 150.0f, 645.0f);
-  new_rectangle(&ui.board.block);
+  load_tetris_board(&ui.board, 50.0f, 155.0f, 250.0f, 500.0f);
 
   load_skin("test", &ui.skin);
-
-  glBindTexture(GL_TEXTURE_2D, ui.skin.block_texture);
 
   SDL_Event e;
 
@@ -142,11 +146,11 @@ int main(void) {
       handle_key(e, &ui.keys, &ui.board);
     }
 
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.21f, 0.12f, 0.11f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    //draw_current(&ui);
     draw_tetris_board(&ui);
-    draw_current(&ui);
 
     SDL_GL_SwapWindow(window);
 

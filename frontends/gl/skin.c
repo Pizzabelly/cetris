@@ -29,8 +29,23 @@ void load_skin(char* name, cetris_skin_t* skin) {
 #endif
   
   char file[125];
+
   format_str(file, 125, "%s/blocks.png", dir_name);
-  if (load_image(file, skin->block_texture)) {
+  glGenTextures(1, &skin->block.texture);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, skin->block.texture);
+  new_rectangle(&skin->block);
+  if (load_image(file, &skin->block)) {
     skin->has_block_texture = true;
   } else skin->has_block_texture = false;
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  format_str(file, 125, "%s/overlay.png", dir_name);
+  glGenTextures(1, &skin->overlay.texture);
+  glBindTexture(GL_TEXTURE_2D, skin->overlay.texture);
+  new_rectangle(&skin->overlay);
+  if (load_image(file, &skin->overlay)) {
+    skin->has_overlay_texture = true;
+  } else skin->has_overlay_texture = false;
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
