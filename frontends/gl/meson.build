@@ -18,10 +18,6 @@ else
   deps += dependency('SDL2_image')
 endif
 
-configure_file(input: 'block.jpg', 
-  output: 'block.jpg',
-  copy: true, install: false)
-
 executable('cetris', src,
   dependencies: deps,
   include_directories: inc,

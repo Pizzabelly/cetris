@@ -60,7 +60,7 @@ void update_rect(drawable_t *block, GLfloat x, GLfloat y, GLfloat w, GLfloat h, 
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 }
 
-void new_rectangle(GLuint shaderProgram, drawable_t* drawable) {
+void new_rectangle(drawable_t* drawable) {
   glGenVertexArrays(1, &drawable->vao);
   glBindVertexArray(drawable->vao);
 
@@ -74,15 +74,14 @@ void new_rectangle(GLuint shaderProgram, drawable_t* drawable) {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, drawable->ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
-  glEnableVertexAttribArray(posAttrib);
-  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), 0);
+  
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)0);
+  glEnableVertexAttribArray(0);
 
-  GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
-  glEnableVertexAttribArray(colAttrib);
-  glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(2* sizeof(GLfloat)));
+  glEnableVertexAttribArray(1);
 
-  GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
-  glEnableVertexAttribArray(texAttrib);
-  glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+  glEnableVertexAttribArray(2);
+
 }

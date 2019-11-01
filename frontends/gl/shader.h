@@ -2,4 +2,4 @@
 
 #include <glad/glad.h>
 
-GLuint new_shader_program();
+void new_shader_program(GLuint *shaderProgram);
