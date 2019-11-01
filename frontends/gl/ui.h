@@ -10,7 +10,7 @@ typedef struct {
   GLfloat x_offset;
   GLfloat y_offset;
 
-  drawable_t block;
+  drawable_t **blocks;
   cetris_game game;
   cetris_config config;
 } tetris_board_t;
