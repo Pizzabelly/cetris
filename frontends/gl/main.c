@@ -131,7 +131,7 @@ int main(void) {
   cetris_start_game(&ui.board.game);
   
   load_tetris_board(&ui.board, 50.0f, 155.0f, 150.0f, 645.0f);
-  //new_rectangle(&ui.board.block);
+  new_rectangle(&ui.board.block);
 
   load_skin("test", &ui.skin);
 
@@ -148,7 +148,7 @@ int main(void) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    draw_tetris_board(&ui);
+    //draw_tetris_board(&ui);
     draw_current(&ui);
 
     SDL_GL_SwapWindow(window);

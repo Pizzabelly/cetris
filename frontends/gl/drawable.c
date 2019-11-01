@@ -61,10 +61,7 @@ void update_rect(drawable_t *block, GLfloat x, GLfloat y, GLfloat w, GLfloat h, 
   //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 }
 
-void new_rectangle(drawable_t* drawable, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
-  calc_pos(&vertices[0], x, y, w, h);
-  set_block_texture(&vertices, 2);
-
+void new_rectangle(drawable_t* drawable) {
   glGenVertexArrays(1, &drawable->vao);
   glBindVertexArray(drawable->vao);
 
