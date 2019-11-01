@@ -1,4 +1,5 @@
 #pragma once
+#include <glad/glad.h>
 
 #include "drawable.h"
 #include "skin.h"
@@ -11,6 +12,7 @@ typedef struct {
 
   drawable_t block;
   cetris_game game;
+  cetris_config config;
 } tetris_board_t;
 
 typedef struct {

@@ -486,7 +486,7 @@ CETRIS_EXPORT void init_game(cetris_game *g, cetris_config* c) {
 
   cetris_config config;
   if (!c) config = g->config;
-  else config = *c;
+  else config = *c;  
 
   // check for config errorsa
   if (config.next_piece_delay < config.line_delay_clear)

@@ -57,7 +57,8 @@ void update_rect(drawable_t *block, GLfloat x, GLfloat y, GLfloat w, GLfloat h, 
   set_block_texture(&vertices[0], mino);
 
   glBindBuffer(GL_ARRAY_BUFFER, block->vbo);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 }
 
 void new_rectangle(drawable_t* drawable) {

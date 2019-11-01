@@ -7,14 +7,16 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-#include "cetris.h"
-#include "rules.h"
-#include "timer.h"
+#include <cetris.h>
+#include <timer.h>
+#include <rules.h>
+
 #include "shader.h"
 #include "skin.h"
 #include "drawable.h"
 #include "ui.h"
 
+static const int FRAME_RATE = 144;
 static const int SCREEN_FULLSCREEN = 0;
 static const int SCREEN_WIDTH  = 400;
 static const int SCREEN_HEIGHT = 800;
@@ -85,6 +87,9 @@ int main(void) {
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+ 
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
   if (SCREEN_FULLSCREEN) {
     window = SDL_CreateWindow(
@@ -108,7 +113,7 @@ int main(void) {
   printf("Renderer: %s\n", glGetString(GL_RENDERER));
   printf("Version:  %s\n", glGetString(GL_VERSION));
 
-  //SDL_GL_SetSwapInterval(1);
+  SDL_GL_SetSwapInterval(1);
 
   cetris_ui ui;
   ui.keys = default_keys; 
@@ -119,21 +124,22 @@ int main(void) {
   new_shader_program(&shaderProgram);
   glUseProgram(shaderProgram);
 
-  ui.board.game.config = tetris_ds_config;
+  printf("%i\n", tetris_ds_config.board_x); 
+  ui.board.config = tetris_ds_config;
+
+  init_game(&ui.board.game, &ui.board.config);
+  cetris_start_game(&ui.board.game);
   
   load_tetris_board(&ui.board, 50.0f, 155.0f, 150.0f, 645.0f);
-
   new_rectangle(&ui.board.block);
 
   load_skin("test", &ui.skin);
-
-  init_game(&ui.board.game, &tetris_ds_config);
-  cetris_start_game(&ui.board.game);
 
   glBindTexture(GL_TEXTURE_2D, ui.skin.block_texture);
 
   SDL_Event e;
 
+  int delay = 1000/FRAME_RATE;
   for (;;) {
     while(SDL_PollEvent(&e)) {
       handle_key(e, &ui.keys, &ui.board);
@@ -142,13 +148,16 @@ int main(void) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    draw_tetris_board(&ui);
+    //draw_tetris_board(&ui);
     draw_current(&ui);
 
     SDL_GL_SwapWindow(window);
 
-    SDL_Delay(1);
+    SDL_Delay(delay);
   }
+  
+  SDL_GL_DeleteContext(maincontext);
+  SDL_DestroyWindow(window);
  
   SDL_Quit();
   return 0;

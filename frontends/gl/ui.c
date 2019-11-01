@@ -5,8 +5,10 @@
 #include "drawable.h"
 
 void load_tetris_board(tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
-  board->block_width = w / (GLfloat)board->game.config.board_x;
-  board->block_height = h / (GLfloat)board->game.config.board_y;
+  board->block_width = w / (GLfloat)board->config.board_x;
+  board->block_height = h / (GLfloat)board->config.board_y;
+  printf("%i, %f, %i, %f\n", board->config.board_x, board->block_width, 
+                             board->config.board_y, board->block_height);
 
   board->x_offset = x;
   board->y_offset = y;
