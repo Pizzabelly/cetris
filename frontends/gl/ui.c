@@ -12,14 +12,10 @@ void load_tetris_board(tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, G
 
   board->x_offset = x;
   board->y_offset = y;
-
-  glGenTextures(1, &board->block.texture);
-  load_image("block.jpg", board->block.texture);
 }
 
 void draw_tetris_board(cetris_ui *ui) {
   glBindVertexArray(ui->board.block.vao);
-  glBindTexture(GL_TEXTURE_2D, ui->skin.block_texture);
   for (int x = 0; x < ui->board.game.config.board_x; x++) {
     for (int y = ui->board.game.highest_line; y < ui->board.game.config.board_y; y++) {
       if (ui->board.game.board[x][y] & SLOT_OCCUPIED) {
@@ -37,7 +33,6 @@ void draw_tetris_board(cetris_ui *ui) {
 }
 
 void draw_current(cetris_ui *ui) {
-  glBindTexture(GL_TEXTURE_2D, ui->skin.block_texture);
   glBindVertexArray(ui->board.block.vao);
   for (int s = 0; s < 4; s++) {
     for (int j = 0; j < 4; j++) {

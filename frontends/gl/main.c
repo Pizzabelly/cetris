@@ -87,9 +87,6 @@ int main(void) {
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
- 
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
   if (SCREEN_FULLSCREEN) {
     window = SDL_CreateWindow(
@@ -148,7 +145,7 @@ int main(void) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    //draw_tetris_board(&ui);
+    draw_tetris_board(&ui);
     draw_current(&ui);
 
     SDL_GL_SwapWindow(window);
