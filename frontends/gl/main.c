@@ -6,6 +6,7 @@
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_opengl.h>
+#include <SDL_mixer.h>
 
 #include <cetris.h>
 #include <timer.h>
@@ -96,13 +97,18 @@ void load_config(cetris_ui *ui) {
 }
 
 void handle_game_events(cetris_ui *ui, tetris_board_t *board) {
-  /*
-  if (board->count_down < 0 && board->game.waiting) {
+  if (board->game.waiting) {
+    SDL_Delay(100);
     cetris_start_game(&board->game);
   }
-  */
 
+  if (board->game.lock_event > 0) {
+    Mix_PlayChannel( 1, board->skin.lock_sound, 0 );
+    board->game.lock_event--;
+  }
+ 
   if (board->game.line_event > 0) {
+    
     int index;
     //if (ui->skin.random_audio) {
     //  index = rand() % 4;//ui->skin.clear_sound_count;
@@ -111,40 +117,22 @@ void handle_game_events(cetris_ui *ui, tetris_board_t *board) {
     //}
     //if (index >= 4) 
       //index = ui->skin.clear_sound_count - 1;
-
-    SDL_QueueAudio(ui->audio_device, board->skin.clear_sound[index].wav_buffer,  
-        board->skin.clear_sound[index].wav_length);
-
-    SDL_PauseAudioDevice(ui->audio_device, 0);
+   
+    Mix_PlayChannel( 1, board->skin.clear_sound[index], 0 );
 
     board->game.line_event--;
-    if (board->game.lock_event) 
-      board->game.lock_event = 0;
   }
 
   if (board->game.tetris_event > 0) {
     //int index = rand() % ui->skin.tetris_sound_count;
-    SDL_QueueAudio(ui->audio_device, board->skin.tetris_sound[0].wav_buffer,  
-        board->skin.tetris_sound[0].wav_length);
-
-    SDL_PauseAudioDevice(ui->audio_device, 0);
+    Mix_PlayChannel( 1, board->skin.tetris_sound[0], 0 );
     board->game.tetris_event--;
   }
 
-  if (board->game.lock_event > 0) {
-    SDL_QueueAudio(ui->audio_device, board->skin.lock_sound.wav_buffer, 
-        board->skin.lock_sound.wav_length);
-
-    SDL_PauseAudioDevice(ui->audio_device, 0);
-    board->game.lock_event--;
-  }
-
   if (board->game.move_event > 0) {
-    SDL_QueueAudio(ui->audio_device, board->skin.move_sound.wav_buffer, 
-        board->skin.move_sound.wav_length);
-
-    SDL_PauseAudioDevice(ui->audio_device, 0);
-    board->game.move_event--;
+    Mix_HaltChannel(0);
+    Mix_PlayChannel( 0, board->skin.move_sound, 0 );
+    board->game.move_event = 0;
   }
 }
 
@@ -166,13 +154,13 @@ void handle_key(SDL_Event e, key_bindings_t *keys, tetris_board_t* board) {
         move_piece(&board->game, HARD_DROP);
       } else if (sym == keys->key_hold) {
         hold_piece(&board->game);
-      } else if (sym == keys->key_rotate_cw) {
+      } else if (sym == keys->key_rotate_cw || sym == 'z') {
         move_piece(&board->game, ROTATE_CW);
       } else if (sym == keys->key_rotate_ccw) {
         move_piece(&board->game, ROTATE_CCW);
       } else if (sym == keys->key_restart) {
         cetris_stop_game(&board->game);
-        //board->count_down = 3;
+        board->game.waiting = true;
       }
       break;
     case SDL_KEYUP:
@@ -198,6 +186,10 @@ int main(void) {
   if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) < 0) {
     printf("error\n");
   }
+
+  Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
+  Mix_AllocateChannels(4);
+  Mix_Volume(0, 20);
 
   SDL_GL_LoadLibrary(NULL);
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
@@ -231,8 +223,6 @@ int main(void) {
   cetris_ui ui;
   ui.window_height = SCREEN_HEIGHT;
   ui.window_width = SCREEN_WIDTH;
-
-  ui.audio_device = load_audio();
 
   ui.keys = default_keys; 
 

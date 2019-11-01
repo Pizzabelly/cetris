@@ -10,10 +10,10 @@ typedef struct {
   drawable_t border;
   drawable_t background;
 
-  audio_clip_t *clear_sound;
-  audio_clip_t *tetris_sound;
-  audio_clip_t lock_sound;
-  audio_clip_t move_sound;
+  Mix_Chunk **clear_sound;
+  Mix_Chunk **tetris_sound;
+  Mix_Chunk *lock_sound;
+  Mix_Chunk *move_sound;
 } cetris_skin_t;
 
 void load_skin(char* name, cetris_skin_t* skin);

@@ -51,24 +51,19 @@ void load_skin(char* name, cetris_skin_t* skin) {
 
   int clear_count = 5;
   skin->clear_sound = 
-    (audio_clip_t *)malloc(sizeof(audio_clip_t) * 5);
+    (Mix_Chunk **)malloc(sizeof(Mix_Chunk*) * 5);
   load_multiple_audio("clear", dir_name, 
       &clear_count, skin->clear_sound);
 
   int tetris_count = 5;
   skin->tetris_sound = 
-    (audio_clip_t *)malloc(sizeof(audio_clip_t) * 5);
+    (Mix_Chunk **)malloc(sizeof(Mix_Chunk*) * 5);
   load_multiple_audio("four_clear", dir_name, 
       &tetris_count, skin->tetris_sound);
 
   format_str(file, 125, "%s/lock.wav", dir_name);
-  SDL_LoadWAV(file, &skin->lock_sound.wav_spec,
-      &skin->lock_sound.wav_buffer, &skin->lock_sound.wav_length);
+  skin->lock_sound = Mix_LoadWAV(file);
   
   format_str(file, 125, "%s/move.wav", dir_name);
-  SDL_LoadWAV(file, &skin->move_sound.wav_spec,
-      &skin->move_sound.wav_buffer, &skin->move_sound.wav_length);
-
-
-
+  skin->move_sound = Mix_LoadWAV(file);
 }

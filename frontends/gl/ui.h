@@ -43,8 +43,6 @@ typedef struct {
   GLfloat window_height;
   GLfloat window_width;
 
-  SDL_AudioDeviceID audio_device;
-
   key_bindings_t keys;
 
   char* skin_name;
