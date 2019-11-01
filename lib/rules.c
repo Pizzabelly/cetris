@@ -17,6 +17,11 @@ bool marathon(cetris_game *g) {
   return false;
 }
 
+// https://tetris.fandom.com/wiki/Tetris_Worlds
+ctick tetris_worlds_levels[20] = {1000, 793, 618, 473, 355, 262, 189, 134, 94, 64,
+                                         43,  28,  18,  11,  7,  4,  2,  1, 1, 1};
+
+
 // https://tetris.fandom.com/wiki/Tetris_DS
 cetris_config tetris_ds_config = {
   .board_x = 10,
@@ -33,11 +38,8 @@ cetris_config tetris_ds_config = {
   .das_das = 183,
   .starting_level = 1,
   .wait_on_clear = true,
+  .levels = &tetris_worlds_levels[0],
   .win_condition = marathon
 };
-
-// https://tetris.fandom.com/wiki/Tetris_Worlds
-ctick tetris_worlds_levels[20] = {1000, 793, 618, 473, 355, 262, 189, 134, 94, 64,
-                                         43,  28,  18,  11,  7,  4,  2,  1, 1, 1};
 
 

@@ -1,60 +1,32 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <glad/glad.h>
+#include <SDL.h>
+#include <SDL_opengl.h>
 
 #include "cetris.h"
+#include "rules.h"
+#include "timer.h"
+#include "shader.h"
+#include "skin.h"
+#include "drawable.h"
+#include "ui.h"
 
-static cetris_game cetris;
+#define W 400
+#define H 800
 
-const char *vertex_shader_source = "#version 450 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "layout (location = 1) in vec3 aColor;\n"
-    "layout (location = 2) in vec2 aTexCoord;\n"
-    "out vec3 ourColor;\n"
-    "out vec2 TexCoord;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos, 1.0);\n"
-    "   ourColor = aColor;\n"
-    "   TexCoord = aTexCoord;\n"
-    "}\0";
-
-const char *fragment_shader_source = "#version 450 core\n"
-    "out vec4 FragColor;\n"
-    "in vec3 ourColor;\n"
-    "in vec2 TexCoord;\n"
-    "uniform sampler2D ourTexture;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = texture(ourTexture, TexCoord) * vec4(ourColor, 1.0);\n"
-    "}\n\0";
-
-
-GLuint shader_program;
-
-GLfloat default_rect[32] = {
-   // positions       // colors          // texture coords
-   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,   // top right
-   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f,   // bottom right
-   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f,   // bottom left
-   0.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 1.0f    // top left 
-};
+static const int SCREEN_FULLSCREEN = 0;
+static const int SCREEN_WIDTH  = 400;
+static const int SCREEN_HEIGHT = 800;
+static SDL_Window *window = NULL;
+static SDL_GLContext maincontext;
 
 typedef struct {
   GLfloat r;
   GLfloat g;
   GLfloat b;
 } rbg_color;
-
-GLuint indices[] = {  
-  0, 1, 3, // first triangle
-  1, 2, 3  // second triangle
-};
 
 rbg_color colors[7] = {
   //{0.0f, 0.0f, 0.0f},     // Black
@@ -67,192 +39,135 @@ rbg_color colors[7] = {
   {0.255f,0.220f,0.0f}    // Yellow 
 };
 
-typedef struct {
-  GLuint vao;
-  GLuint vbo;
-  GLuint ebo;
-  GLuint texture;
-} drawable;
+key_bindings_t default_keys = (key_bindings_t) {
+    .key_down = SDLK_DOWN,
+    .key_right = SDLK_RIGHT,
+    .key_left = SDLK_LEFT,
+    .key_rotate_cw = SDLK_UP,
+    .key_rotate_ccw = 'x',
+    .key_drop = SDLK_SPACE,
+    .key_hold = 'c',
+    .key_restart = 'r'
+};
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-  glViewport(0, 0, width, height);
-}  
-
-void input_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, 1);
-
-  if (key == GLFW_KEY_D && action == GLFW_PRESS)
-    move_piece(&cetris, RIGHT);
-
-  if (key == GLFW_KEY_S && action == GLFW_PRESS)
-    move_piece(&cetris, USER_DOWN);
-
-  if (key == GLFW_KEY_A && action == GLFW_PRESS)
-    move_piece(&cetris, LEFT);
-
-  if (key == GLFW_KEY_W && action == GLFW_PRESS)
-    move_piece(&cetris, ROTATE_CW);
-
-  if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    move_piece(&cetris, HARD_DROP);
-}
-
-void load_texture(char *file_name, GLuint texture) {
-  int w, h, channel;
-  unsigned char *data = stbi_load(file_name, &w, &h, &channel, 0);
-  glBindTexture(GL_TEXTURE_2D, texture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-  glGenerateMipmap(GL_TEXTURE_2D);
-  stbi_image_free(data);
-}
-
-void load_vertex_shader(GLuint program) {
-  GLint vertex_shader;
-  vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-
-  glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
-  glCompileShader(vertex_shader);
-  glAttachShader(program, vertex_shader);
-  glDeleteShader(vertex_shader);
-}
-
-void load_fragment_shader(GLuint program) {
-  GLint fragment_shader;
-  fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-
-  glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
-  glCompileShader(fragment_shader);
-  glAttachShader(program, fragment_shader);
-  glDeleteShader(fragment_shader);
-}
-
-void create_static_2d(drawable *b, char* texture_file) {
-  glGenVertexArrays(1, &b->vao);
-  glGenBuffers(1, &b->vbo);
-  glGenBuffers(1, &b->ebo);
-  glGenTextures(1, &b->texture);
-
-  glBindVertexArray(b->vao);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, b->ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
-
-  glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
-
-  GLfloat rect[32];
-  memcpy(&rect, &default_rect, sizeof(GLfloat) * 32);
-  glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), default_rect, GL_DYNAMIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
-  glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3* sizeof(GLfloat)));
-  glEnableVertexAttribArray(1);
-
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-  glEnableVertexAttribArray(2);
-
-  load_texture(texture_file, b->texture);
-}
-
-void calc_size(GLfloat *rect, int x, int y) {
-  rect[0] = rect[8] = (x + 1.0f) / 10.0f;
-  rect[1] = rect[25] = (((y) * -1.0f) + 1.0f) / 20.0f; 
-  rect[9] = rect[17] = rect[1] - .05f;
-  rect[16] = rect[24] = rect[0] - .1f;
-}
-
-
-void update_block(drawable *b, int x, int y, int color) {
-  GLfloat block[32];
-  memcpy(block, default_rect, sizeof(GLfloat) * 32);
-
-  x = x - 6;
-  y = y - 20;
-
-  block[0] = block[8] = (x + 1.0f) / 10.0f;
-  block[1] = block[25] = (((y) * -1.0f) + 1.0f) / 20.0f; 
-  block[9] = block[17] = block[1] - .05f;
-  block[16] = block[24] = block[0] - .1f;
-
-  block[3] = block[11] = block[19] = block[27] = colors[color].r;
-  block[4] = block[12] = block[20] = block[28] = colors[color].g;
-  block[5] = block[13] = block[21] = block[29] = colors[color].b;
-
-  glBindVertexArray(b->vao);
-  glBindBuffer(GL_ARRAY_BUFFER, b->vbo);
-  glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(GLfloat), block, GL_DYNAMIC_DRAW);
+void handle_key(SDL_Event e, key_bindings_t *keys, tetris_board_t* board) {
+  int sym; 
+  switch (e.type) {
+    case SDL_QUIT: exit(0);
+    case SDL_KEYDOWN:
+      sym = e.key.keysym.sym; 
+      if (sym == keys->key_left) {
+        move_piece(&board->game, LEFT);
+      } else if (sym == keys->key_right) {
+        move_piece(&board->game, RIGHT);
+      } else if (sym == keys->key_down) {
+        move_piece(&board->game, DOWN);
+      } else if (sym == keys->key_drop) {
+        move_piece(&board->game, HARD_DROP);
+      } else if (sym == keys->key_hold) {
+        hold_piece(&board->game);
+      } else if (sym == keys->key_rotate_cw) {
+        move_piece(&board->game, ROTATE_CW);
+      } else if (sym == keys->key_rotate_ccw) {
+        move_piece(&board->game, ROTATE_CCW);
+      } else if (sym == keys->key_restart) {
+        cetris_stop_game(&board->game);
+        //board->count_down = 3;
+      }
+      break;
+    case SDL_KEYUP:
+      sym = e.key.keysym.sym; 
+      if (sym == keys->key_left) {
+        unhold_move(&board->game, LEFT);
+      } else if (sym == keys->key_right) {
+        unhold_move(&board->game, RIGHT);
+      } else if (sym == keys->key_down) {
+        unhold_move(&board->game, DOWN);
+      } else if (sym == keys->key_drop) {
+        unhold_move(&board->game, HARD_DROP);
+      } else if (sym == keys->key_rotate_cw) {
+        unhold_move(&board->game, ROTATE_CW);
+      } else if (sym == keys->key_rotate_ccw) {
+        unhold_move(&board->game, ROTATE_CCW);
+      }
+      break;
+  }
 }
 
 int main(void) {
-  glfwInit();
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-  GLFWwindow* window = glfwCreateWindow(400, 800, "Cetris", NULL, NULL);
-  if (window == NULL) {
-    printf("[Error] failed to create GLFW window\n");
-    glfwTerminate();
-    return -1;
+  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    printf("error\n");
   }
 
-  glfwMakeContextCurrent(window);
+  SDL_GL_LoadLibrary(NULL);
+  SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
+  SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+  SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 
-  if (!gladLoadGL(glfwGetProcAddress)) {
-    printf("[Error] failed to load GLAD\n");
-    return -1;
+  if (SCREEN_FULLSCREEN) {
+    window = SDL_CreateWindow(
+      "cetris", 
+      SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+      0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL
+    );
+  } else {
+    window = SDL_CreateWindow(
+      "cetris", 
+      SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+      SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL
+    );
   }
+
+  maincontext = SDL_GL_CreateContext(window);
+
+  printf("OpenGL loaded\n");
+  gladLoadGLLoader(SDL_GL_GetProcAddress);
+  printf("Vendor:   %s\n", glGetString(GL_VENDOR));
+  printf("Renderer: %s\n", glGetString(GL_RENDERER));
+  printf("Version:  %s\n", glGetString(GL_VERSION));
+
+  SDL_GL_SetSwapInterval(1);
+
+  cetris_ui ui;
+  ui.keys = default_keys; 
 
   glViewport(0, 0, 400, 800);
 
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  GLuint shaderProgram = new_shader_program();
+  glUseProgram(shaderProgram);
 
-  shader_program = glCreateProgram();
-  load_fragment_shader(shader_program);
-  load_vertex_shader(shader_program);
-  glLinkProgram(shader_program);
+  ui.board.game.config = tetris_ds_config;
+  
+  load_tetris_board(&ui.board, 50.0f, 155.0f, 150.0f, 645.0f);
 
-  drawable block;
-  create_static_2d(&block, "block.jpg");
+  new_rectangle(shaderProgram, &ui.board.block);
 
+  load_skin("test", &ui.skin);
 
-  init_game(&cetris);
+  init_game(&ui.board.game, &tetris_ds_config);
+  cetris_start_game(&ui.board.game);
 
-  double prev_time = glfwGetTime();
+  glBindTexture(GL_TEXTURE_2D, ui.skin.block_texture);
 
-  glfwSetKeyCallback(window, input_callback);
+  SDL_Event e;
 
-  while(!glfwWindowShouldClose(window)) {
+  for (;;) {
+    while(SDL_PollEvent(&e)) {
+      handle_key(e, &ui.keys, &ui.board);
+    }
+
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glBindTexture(GL_TEXTURE_2D, block.texture);
-    glUseProgram(shader_program);
-    glBindVertexArray(block.vao);
-    for (int x = 0; x < CETRIS_BOARD_X; x++) {
-      for (int y = 0; y < CETRIS_BOARD_Y; y++) {
-        if (cetris.board[x][y].flags & SLOT_OCCUPIED) {
-          update_block(&block, x, y, cetris.board[x][y].color);  
-          glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        }
-      }
-    }
+    draw_tetris_board(&ui);
+    draw_current(&ui);
 
-    double current_time = glfwGetTime();
-    if (current_time - prev_time >= 0.0166) {
-      update_game_tick(&cetris);
-      prev_time = current_time;
-    }
 
-    glfwSwapBuffers(window);
-    glfwPollEvents();
+    SDL_GL_SwapWindow(window);
+
+    SDL_Delay(1);
   }
-  
-  glfwTerminate();
+ 
+  SDL_Quit();
   return 0;
 }

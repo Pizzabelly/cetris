@@ -211,7 +211,7 @@ void draw_block(cetris_ui *ui, int x, int y, int width, int height, int mino, in
   } else {
     SDL_Rect b = {x + 1, y + 1, width - 1, height - 1};
     SDL_Color c = mino_colors[mino];
-    //SDL_SetRenderDrawColor(ui->render, c.r, c.g, c.b, alpha);
+    SDL_SetRenderDrawColor(ui->render, c.r, c.g, c.b, alpha);
     SDL_RenderFillRect(ui->render, &b);
     SDL_RenderDrawRect(ui->render, &b);
     SDL_SetRenderDrawColor(ui->render, off.r, off.g, off.b, off.a);
