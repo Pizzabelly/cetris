@@ -17,6 +17,7 @@
 #include "skin.h"
 #include "drawable.h"
 #include "ui.h"
+#include "events.h"
 
 static const int FRAME_RATE = 144;
 static const int SCREEN_FULLSCREEN = 0;
@@ -96,6 +97,7 @@ void load_config(cetris_ui *ui) {
   }
 }
 
+
 void handle_game_events(cetris_ui *ui, tetris_board_t *board) {
   if (board->game.waiting) {
     SDL_Delay(100);
@@ -134,8 +136,6 @@ void handle_game_events(cetris_ui *ui, tetris_board_t *board) {
     board->game.move_event--;
   }
 }
-
-
 
 void handle_key(SDL_Event e, key_bindings_t *keys, tetris_board_t* board) {
   int sym; 
@@ -245,6 +245,8 @@ int main(void) {
   
   load_tetris_board(&ui, &ui.board, 235.0f, 200.0f, 250.0f, 500.0f);
   load_held_piece(&ui, &ui.board, 152.0f, 210.0f, 88.0f, 88.0f);
+  
+  start_event_thread(&ui);
 
   SDL_Event e;
 
@@ -258,11 +260,11 @@ int main(void) {
     
     draw_tetris_board(&ui);
     draw_held_piece(&ui);
-    handle_game_events(&ui, &ui.board);
+    //handle_game_events(&ui, &ui.board);
 
     SDL_GL_SwapWindow(window);
 
-    SDL_Delay(delay);
+    //SDL_Delay(delay);
   }
   
   SDL_GL_DeleteContext(maincontext);
