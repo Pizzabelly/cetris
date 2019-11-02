@@ -128,11 +128,10 @@ void handle_game_events(cetris_ui *ui, tetris_board_t *board) {
     Mix_PlayChannel( 1, board->skin.tetris_sound[0], 0 );
     board->game.tetris_event--;
   }
-
   if (board->game.move_event > 0) {
-    Mix_HaltChannel(0);
-    Mix_PlayChannel( 0, board->skin.move_sound, 0 );
-    board->game.move_event = 0;
+    //int index = rand() % ui->skin.tetris_sound_count;
+    Mix_PlayChannel( 0, board->skin.move_sound, 0);
+    board->game.move_event--;
   }
 }
 

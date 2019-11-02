@@ -50,7 +50,6 @@ typedef struct {
   tetris_board_t board;
 
   GLuint shader_program;
-
 } cetris_ui;
 
 void draw_tetris_board(cetris_ui *ui);

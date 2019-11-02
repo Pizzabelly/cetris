@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
+#include <SDL_mixer.h>
+
 #ifdef _WIN32
 #define format_str sprintf_s
 #else
@@ -64,6 +66,6 @@ void load_skin(char* name, cetris_skin_t* skin) {
   format_str(file, 125, "%s/lock.wav", dir_name);
   skin->lock_sound = Mix_LoadWAV(file);
   
-  format_str(file, 125, "%s/move.wav", dir_name);
+  format_str(file, 125, "%s/move_das.wav", dir_name);
   skin->move_sound = Mix_LoadWAV(file);
 }
