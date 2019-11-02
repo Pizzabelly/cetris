@@ -8,4 +8,5 @@
 
 #include <SDL_mixer.h>
 
-void load_multiple_audio(char* name, char* dir_name, int *count, Mix_Chunk** list);
+void load_multiple_audio(char* name, char* dir_name, int *count, Mix_Chunk*** list);
+void load_audio(char* name, char* dir_name, Mix_Chunk** chunk);

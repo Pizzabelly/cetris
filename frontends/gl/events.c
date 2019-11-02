@@ -7,33 +7,38 @@
 #include <unistd.h>
 #endif
 
+#include "timer.h"
+
 #include "ui.h"
+#include <SDL.h>
 #include <SDL_mixer.h>
 
 void handle_game_event(cetris_ui *ui) {
-/*
-  if (board->game.lock_event > 0) {
-    Mix_PlayChannel( 1, board->skin.lock_sound, 0 );
-    board->game.lock_event--;
+  if (ui->board.game.waiting) {
+    SDL_Delay(100);
+    cetris_start_game(&ui->board.game);
   }
-  */
 
-  //if (board->game.line_event > 0) {
-  
-  /*
+  if (ui->board.game.lock_event > 0) {
+    Mix_PlayChannel( 1, ui->board.skin.lock_sound, 0 );
+    ui->board.game.lock_event--;
+  }
+
+  if (ui->board.game.line_event > 0) {
+    int index = ui->board.game.line_combo - 1;
+    Mix_PlayChannel( 1, ui->board.skin.clear_sound[index], 0 );
+    ui->board.game.line_event--;
+  }
+
   if (ui->board.game.tetris_event > 0) {
-    //int index = rand() % ui->skin.tetris_sound_count;
-    Mix_PlayChannel( 1, ui->board.skin.tetris_sound[0], 0 );
+    int index = rand() % ui->board.skin.tetris_sound_count;
+    Mix_PlayChannel( 1, ui->board.skin.tetris_sound[index], 0 );
     ui->board.game.tetris_event--;
   }
-  */
 
   if (ui->board.game.move_event > 0) {
-    //int index = rand() % ui->skin.tetris_sound_count;
-    ///Mix_HaltChannel(0);
-    Mix_PlayChannel( 0, ui->board.skin.move_sound, ui->board.game.move_event - 1);
-    ui->board.game.move_event = 0;
-    printf("sound\n");
+    Mix_PlayChannel( 0, ui->board.skin.move_sound, 0);
+    ui->board.game.move_event--;
   }
 }
 

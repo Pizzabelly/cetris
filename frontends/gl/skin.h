@@ -11,7 +11,11 @@ typedef struct {
   drawable_t background;
 
   Mix_Chunk **clear_sound;
+  int clear_sound_count;
+
   Mix_Chunk **tetris_sound;
+  int tetris_sound_count;
+
   Mix_Chunk *lock_sound;
   Mix_Chunk *move_sound;
 } cetris_skin_t;

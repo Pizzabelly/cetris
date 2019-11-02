@@ -97,46 +97,6 @@ void load_config(cetris_ui *ui) {
   }
 }
 
-
-void handle_game_events(cetris_ui *ui, tetris_board_t *board) {
-  if (board->game.waiting) {
-    SDL_Delay(100);
-    cetris_start_game(&board->game);
-  }
-
-  if (board->game.lock_event > 0) {
-    Mix_PlayChannel( 1, board->skin.lock_sound, 0 );
-    board->game.lock_event--;
-  }
- 
-  if (board->game.line_event > 0) {
-    
-    int index;
-    //if (ui->skin.random_audio) {
-    //  index = rand() % 4;//ui->skin.clear_sound_count;
-    //} else {
-      index = board->game.line_combo - 1;
-    //}
-    //if (index >= 4) 
-      //index = ui->skin.clear_sound_count - 1;
-   
-    Mix_PlayChannel( 1, board->skin.clear_sound[index], 0 );
-
-    board->game.line_event--;
-  }
-
-  if (board->game.tetris_event > 0) {
-    //int index = rand() % ui->skin.tetris_sound_count;
-    Mix_PlayChannel( 1, board->skin.tetris_sound[0], 0 );
-    board->game.tetris_event--;
-  }
-  if (board->game.move_event > 0) {
-    //int index = rand() % ui->skin.tetris_sound_count;
-    Mix_PlayChannel( 0, board->skin.move_sound, 0);
-    board->game.move_event--;
-  }
-}
-
 void handle_key(SDL_Event e, key_bindings_t *keys, tetris_board_t* board) {
   int sym; 
   switch (e.type) {
@@ -249,7 +209,6 @@ int main(void) {
   start_event_thread(&ui);
 
   SDL_Event e;
-
   int delay = 1000/FRAME_RATE;
   for (;;) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -260,11 +219,8 @@ int main(void) {
     
     draw_tetris_board(&ui);
     draw_held_piece(&ui);
-    //handle_game_events(&ui, &ui.board);
 
     SDL_GL_SwapWindow(window);
-
-    //SDL_Delay(delay);
   }
   
   SDL_GL_DeleteContext(maincontext);
