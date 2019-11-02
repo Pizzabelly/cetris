@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#include <window.h>
+#include <windows.h>
 #else
 #define _GNU_SOURCE
 #include <pthread.h>
@@ -30,9 +30,9 @@ void handle_game_event(cetris_ui *ui) {
 
   if (ui->board.game.move_event > 0) {
     //int index = rand() % ui->skin.tetris_sound_count;
-    Mix_HaltChannel(0);
-    Mix_PlayChannel( 0, ui->board.skin.move_sound, 0);
-    ui->board.game.move_event--;
+    ///Mix_HaltChannel(0);
+    Mix_PlayChannel( 0, ui->board.skin.move_sound, ui->board.game.move_event - 1);
+    ui->board.game.move_event = 0;
     printf("sound\n");
   }
 }
