@@ -29,8 +29,26 @@ void load_held_piece(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y,
   board->held.y_offset = y;
 }
 
+void load_piece_queue(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
+  board->queue.block_width = w / 4.0f;
+  board->queue.block_height = w / 4.0f;
+
+  board->queue.h = h;
+  board->queue.w = w;
+ 
+  board->queue.x_offset = x;
+  board->queue.y_offset = y;
+}
+
+
 void draw_tetris_board(cetris_ui *ui) {
   glActiveTexture(GL_TEXTURE0);
+
+  glBindTexture(GL_TEXTURE_2D, ui->board.skin.background.texture);
+  glBindVertexArray(ui->board.skin.background.vao);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+  glBindTexture(GL_TEXTURE_2D, 0); 
 
   glBindTexture(GL_TEXTURE_2D, ui->board.skin.playboard.texture);
   glBindVertexArray(ui->board.skin.playboard.vao);
@@ -45,16 +63,19 @@ void draw_tetris_board(cetris_ui *ui) {
     GLfloat height = ui->board.block_height;
     GLfloat y_pos = (ui->board.y_offset - ui->board.block_height) + (y * ui->board.block_height);
     if (y == 0) {
-      ui->board.skin.overlay.vertices[3] = ui->board.skin.overlay.vertices[7] = 0.6f;
+      ui->board.skin.overlay.vertices[4] = ui->board.skin.overlay.vertices[9] = 0.6f;
       height = 10;
       y_pos += 15;
     }
+    set_shine(&ui->board.skin.overlay, ui->board.skin.overlay_shine);
     update_rect(&ui->board.skin.overlay, ui->board.x_offset, 
         y_pos, ui->board.block_width * ui->board.game.config.board_x,
         height, ui->window_width,
         ui->window_height);
+    if (ui->board.skin.overlay_shine > 0)
+      ui->board.skin.overlay_shine -= 0.00025f;
     if (y == 0)
-      ui->board.skin.overlay.vertices[3] = ui->board.skin.overlay.vertices[7] = 0.0f;
+      ui->board.skin.overlay.vertices[4] = ui->board.skin.overlay.vertices[9] = 0.0f;
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
   }
 
@@ -156,6 +177,53 @@ void draw_held_piece(cetris_ui *ui) {
             ui->window_width, ui->window_height);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+      }
+    }
+  }
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+
+void draw_piece_queue(cetris_ui *ui) {
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(GL_TEXTURE_2D, ui->board.skin.block.texture);
+  glBindVertexArray(ui->board.skin.block.vao);
+  
+  for (int i = 0; i < 5; i++) {
+  int index = (ui->board.game.current_index + i);
+  int mino;
+
+  if (index <= 6) {
+    mino = ui->board.game.piece_queue[index];
+  } else {
+    index = index % 7;
+    mino = ui->board.game.next_queue[index];
+  }
+
+  for (int s = 0; s < 4; s++) {
+    for (int j = 0; j < 4; j++) {
+        
+      if ((default_matrices[mino][s]>>(3 - j))&1) {
+        GLfloat block_x = 
+          ui->board.queue.x_offset + (j * ui->board.queue.block_width);
+        GLfloat block_y = 
+          ui->board.queue.y_offset + (ui->board.queue.h * (i / 5.0)) + (s * ui->board.queue.block_height);
+
+        if (ui->board.game.held.t == MINO_O) {
+          block_x -= ui->board.queue.block_width / 1.5f;
+        }
+        if (ui->board.game.held.t == MINO_I) {
+          block_x -= ui->board.queue.block_width / 1.5f;
+        }
+
+        set_block_texture(&ui->board.skin.block, mino);
+        update_rect(&ui->board.skin.block, block_x, block_y, 
+            ui->board.queue.block_width, ui->board.queue.block_height,
+            ui->window_width, ui->window_height);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+      }
       }
     }
   }

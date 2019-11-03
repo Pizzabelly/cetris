@@ -8,6 +8,7 @@
 #endif
 
 #include "timer.h"
+#include "drawable.h"
 
 #include "ui.h"
 #include <SDL.h>
@@ -25,14 +26,24 @@ void handle_game_event(cetris_ui *ui) {
   }
 
   if (ui->board.game.line_event > 0) {
-    int index = ui->board.game.line_combo - 1;
+    int index = ui->board.game.line_event - 1;
+    ui->board.skin.overlay_shine = 0.25f;
     Mix_PlayChannel( 1, ui->board.skin.clear_sound[index], 0 );
-    ui->board.game.line_event--;
+    ui->board.game.line_event = 0;
+  }
+
+  if (ui->board.game.combo_event > 0) {
+    int index = ui->board.game.line_combo - 1;
+    if (index >= ui->board.skin.combo_sound_count) {
+      index = ui->board.skin.combo_sound_count - 1;
+    }
+    Mix_PlayChannel( 2, ui->board.skin.combo_sound[index], 0 );
+    ui->board.game.combo_event--;
   }
 
   if (ui->board.game.tetris_event > 0) {
     int index = rand() % ui->board.skin.tetris_sound_count;
-    Mix_PlayChannel( 1, ui->board.skin.tetris_sound[index], 0 );
+    Mix_PlayChannel( 2, ui->board.skin.tetris_sound[index], 0 );
     ui->board.game.tetris_event--;
   }
 

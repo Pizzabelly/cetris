@@ -2,24 +2,25 @@
 
 const char *vertex_shader_source = "#version 450 core\n"
     "layout (location = 0) in vec2 aPos;\n"
-    "layout (location = 1) in vec2 aTexCoord;\n"
+    "layout (location = 1) in float aShine;\n"
+    "layout (location = 2) in vec2 aTexCoord;\n"
     "out vec2 TexCoord;\n"
+    "out float shineColor;\n"
     "void main()\n"
     "{\n"
     "   gl_Position = vec4(aPos, 0.0, 1.0);\n"
     "   TexCoord = aTexCoord;\n"
+    "   shineColor = aShine;\n"
     "}\0";
 
 const char *fragment_shader_source = "#version 450 core\n"
     "out vec4 FragColor;\n"
     "in vec2 TexCoord;\n"
+    "in float shineColor;\n"
     "uniform sampler2D tex;\n"
-    "vec4 layer(vec4 foreground, vec4 background) {\n"
-    "  return foreground * foreground.a + background * (1.0 - foreground.a);\n"
-    "}\n"
     "void main()\n"
     "{\n"
-    "   FragColor = texture(tex, TexCoord);\n"
+    "   FragColor = mix(texture(tex, TexCoord), vec4(1.0, 1.0, 1.0, 1.0), shineColor);\n"
     "}\0";
 
     //"uniform sampler2D overlayTexture;\n"

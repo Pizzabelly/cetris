@@ -21,8 +21,8 @@
 
 static const int FRAME_RATE = 144;
 static const int SCREEN_FULLSCREEN = 0;
-static const int SCREEN_WIDTH  = 720;
-static const int SCREEN_HEIGHT = 900;
+static const int SCREEN_WIDTH  = 900;
+static const int SCREEN_HEIGHT = 720;
 static SDL_Window *window = NULL;
 static SDL_GLContext maincontext;
 
@@ -132,7 +132,7 @@ void handle_key(SDL_Event e, key_bindings_t *keys, tetris_board_t* board) {
         unhold_move(&board->game, DOWN);
       } else if (sym == keys->key_drop) {
         unhold_move(&board->game, HARD_DROP);
-      } else if (sym == keys->key_rotate_cw) {
+      } else if (sym == keys->key_rotate_cw  || sym == 'z') {
         unhold_move(&board->game, ROTATE_CW);
       } else if (sym == keys->key_rotate_ccw) {
         unhold_move(&board->game, ROTATE_CCW);
@@ -149,6 +149,7 @@ int main(void) {
   Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 512);
   Mix_AllocateChannels(4);
   Mix_Volume(0, 20);
+  Mix_Volume(1, 70); 
 
   SDL_GL_LoadLibrary(NULL);
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
@@ -185,11 +186,11 @@ int main(void) {
 
   ui.keys = default_keys; 
 
-  glViewport(0, 0, 720, 900);
+  glViewport(0, 0, 900, 720);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  glClearColor(0.21f, 0.12f, 0.11f, 1.0f);
+  glClearColor(0.56f, 0.67f, 0.72f, 1.0f);
   glEnable(GL_DEPTH_TEST);
   glClearDepth(1.0); 
   glDepthFunc(GL_LEQUAL);
@@ -203,13 +204,13 @@ int main(void) {
   init_game(&ui.board.game);
   cetris_start_game(&ui.board.game);
   
-  load_tetris_board(&ui, &ui.board, 235.0f, 200.0f, 250.0f, 500.0f);
-  load_held_piece(&ui, &ui.board, 152.0f, 210.0f, 88.0f, 88.0f);
-  
+  load_tetris_board(&ui, &ui.board, 325.0f, 110.0f, 250.0f, 500.0f);
+  load_piece_queue(&ui, &ui.board, 610.0f, 100.0f, 100.0f, 400.0f);
+  load_held_piece(&ui, &ui.board, 242.0f, 110.0f, 88.0f, 88.0f);  
+
   start_event_thread(&ui);
 
   SDL_Event e;
-  int delay = 1000/FRAME_RATE;
   for (;;) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
  
@@ -219,6 +220,7 @@ int main(void) {
     
     draw_tetris_board(&ui);
     draw_held_piece(&ui);
+    draw_piece_queue(&ui);
 
     SDL_GL_SwapWindow(window);
   }

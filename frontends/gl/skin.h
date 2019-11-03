@@ -10,6 +10,12 @@ typedef struct {
   drawable_t border;
   drawable_t background;
 
+  GLfloat current_shine;
+  GLfloat overlay_shine;
+
+  Mix_Chunk **combo_sound;
+  int combo_sound_count;
+
   Mix_Chunk **clear_sound;
   int clear_sound_count;
 

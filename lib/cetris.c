@@ -167,7 +167,7 @@ static void move_current(cetris_game *g, uint8_t move) {
   g->current.pos.x += basic_movements[move].x;
 
   int check = check_matrix(g, &g->current.m);
-  if (check > 0 && move != DOWN) g->move_event++;
+  if (check > 0) g->move_event++;
   if (check <= 0) {
     g->current.pos.y -= basic_movements[move].y;
     g->current.pos.x -= basic_movements[move].x;
@@ -393,10 +393,11 @@ void update_board(cetris_game *g) {
 
   g->lines += lines_cleared;
   if (lines_cleared > 0) {
+    g->line_event = lines_cleared;
     if (lines_cleared == 4) {
       g->tetris_event++;
     } else {
-      g->line_event++;
+      g->combo_event++;
     }
     g->line_combo++;
   }
@@ -531,7 +532,6 @@ CETRIS_EXPORT bool update_game_tick(cetris_game *g) {
 
   bool did_move = false;
   if (g->next_drop_tick && g->tick >= g->next_drop_tick) {
-    if (g->held_moves[DOWN]) g->move_event++;
     move_current(g, DOWN);
     g->next_drop_tick = 0;
     did_move = true;

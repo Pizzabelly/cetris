@@ -7,6 +7,7 @@
 #include <SDL_mixer.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "audio.h"
 
 void load_multiple_audio(char* name, char* dir_name, int *count, Mix_Chunk*** list) {

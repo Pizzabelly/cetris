@@ -49,10 +49,11 @@ void load_skin(char* name, cetris_skin_t* skin) {
   load_element(&skin->playboard, "playboard.png", dir_name);
   load_element(&skin->border, "border.png", dir_name);
 
-  char file[125];
-
-  load_multiple_audio("clear", dir_name, 
+  load_multiple_audio("erase", dir_name, 
       &skin->clear_sound_count, &skin->clear_sound);
+
+  load_multiple_audio("combo", dir_name, 
+      &skin->combo_sound_count, &skin->combo_sound);
 
   load_multiple_audio("four_clear", dir_name, 
       &skin->tetris_sound_count, &skin->tetris_sound);

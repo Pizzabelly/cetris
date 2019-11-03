@@ -16,6 +16,17 @@ typedef struct {
 typedef struct {
   GLfloat block_width;
   GLfloat block_height;
+
+  GLfloat h;
+  GLfloat w;
+
+  GLfloat x_offset;
+  GLfloat y_offset;
+} piece_queue_t;
+
+typedef struct {
+  GLfloat block_width;
+  GLfloat block_height;
   GLfloat block_offset;
 
   GLfloat x_offset;
@@ -24,6 +35,7 @@ typedef struct {
   cetris_game game;
 
   held_piece_t held;
+  piece_queue_t queue;
 
   cetris_skin_t skin;
 } tetris_board_t;
@@ -54,6 +66,8 @@ typedef struct {
 
 void draw_tetris_board(cetris_ui *ui);
 void draw_held_piece(cetris_ui *ui);
+void draw_piece_queue(cetris_ui *ui);
 void draw_current(cetris_ui *ui);
 void load_tetris_board(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h);
 void load_held_piece(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h);
+void load_piece_queue(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h);
