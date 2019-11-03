@@ -1,4 +1,4 @@
-src = ['events.c', 'audio.c', 'ui.c', 'skin.c', 'drawable.c', 'shader.c', 'main.c', 'glad/src/glad.c']
+src = ['main.c', 'events.c', 'audio.c', 'ui.c', 'skin.c', 'drawable.c', 'shader.c', 'glad/src/glad.c']
 
 inc = [cetris_inc, include_directories('glad/include')]
 deps = [cetris]

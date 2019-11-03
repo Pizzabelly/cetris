@@ -19,11 +19,11 @@
 #include "ui.h"
 #include "events.h"
 
-static const int FRAME_RATE = 144;
-static const int SCREEN_FULLSCREEN = 0;
-static const int RES_SCALE  = 2;
-static const int SCREEN_WIDTH  = 900 * RES_SCALE;
-static const int SCREEN_HEIGHT = 720 * RES_SCALE;
+#define SCREEN_FULLSCREEN 0
+#define RES_SCALE 1.2
+#define SCREEN_WIDTH 900 * RES_SCALE
+#define SCREEN_HEIGHT 720 * RES_SCALE
+
 static SDL_Window *window = NULL;
 static SDL_GLContext maincontext;
 

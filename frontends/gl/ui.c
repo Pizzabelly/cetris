@@ -4,7 +4,7 @@
 #include "ui.h"
 #include "drawable.h"
 
-static const int RES_SCALE  = 2;
+#define RES_SCALE 1.2
 
 void load_tetris_board(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
   board->block_width = w / (GLfloat)board->game.config.board_x;
