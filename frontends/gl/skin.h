@@ -22,6 +22,9 @@ typedef struct {
   Mix_Chunk **tetris_sound;
   int tetris_sound_count;
 
+  Mix_Chunk **tspin_sound;
+  int tspin_sound_count;
+
   Mix_Chunk *lock_sound;
   Mix_Chunk *move_sound;
 } cetris_skin_t;

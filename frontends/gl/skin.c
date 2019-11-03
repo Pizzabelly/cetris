@@ -52,6 +52,9 @@ void load_skin(char* name, cetris_skin_t* skin) {
   load_multiple_audio("erase", dir_name, 
       &skin->clear_sound_count, &skin->clear_sound);
 
+  load_multiple_audio("tspin", dir_name, 
+      &skin->clear_sound_count, &skin->clear_sound);
+
   load_multiple_audio("combo", dir_name, 
       &skin->combo_sound_count, &skin->combo_sound);
 

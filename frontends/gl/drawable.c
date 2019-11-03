@@ -29,7 +29,6 @@ bool load_image(char* file_name, drawable_t *drawable) {
 
   glGenerateMipmap(GL_TEXTURE_2D);
 
-  //glBindTexture(GL_TEXTURE_2D, 0);
   stbi_image_free(data);
   
   drawable->w = w;
