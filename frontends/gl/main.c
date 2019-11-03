@@ -21,8 +21,9 @@
 
 static const int FRAME_RATE = 144;
 static const int SCREEN_FULLSCREEN = 0;
-static const int SCREEN_WIDTH  = 900;
-static const int SCREEN_HEIGHT = 720;
+static const int RES_SCALE  = 2;
+static const int SCREEN_WIDTH  = 900 * RES_SCALE;
+static const int SCREEN_HEIGHT = 720 * RES_SCALE;
 static SDL_Window *window = NULL;
 static SDL_GLContext maincontext;
 
@@ -186,7 +187,7 @@ int main(void) {
 
   ui.keys = default_keys; 
 
-  glViewport(0, 0, 900, 720);
+  glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -204,9 +205,12 @@ int main(void) {
   init_game(&ui.board.game);
   cetris_start_game(&ui.board.game);
   
-  load_tetris_board(&ui, &ui.board, 325.0f, 110.0f, 250.0f, 500.0f);
-  load_piece_queue(&ui, &ui.board, 610.0f, 100.0f, 100.0f, 400.0f);
-  load_held_piece(&ui, &ui.board, 242.0f, 110.0f, 88.0f, 88.0f);  
+  load_tetris_board(&ui, &ui.board, 325.0f * RES_SCALE, 
+      110.0f * RES_SCALE, 250.0f * RES_SCALE, 500.0f * RES_SCALE);
+  load_piece_queue(&ui, &ui.board, 610.0f * RES_SCALE, 
+      100.0f * RES_SCALE, 100.0f * RES_SCALE, 400.0f * RES_SCALE);
+  load_held_piece(&ui, &ui.board, 242.0f * RES_SCALE, 
+      110.0f * RES_SCALE, 88.0f * RES_SCALE, 88.0f * RES_SCALE);  
 
   start_event_thread(&ui);
 

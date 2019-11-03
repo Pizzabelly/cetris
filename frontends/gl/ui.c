@@ -4,6 +4,8 @@
 #include "ui.h"
 #include "drawable.h"
 
+static const int RES_SCALE  = 2;
+
 void load_tetris_board(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
   board->block_width = w / (GLfloat)board->game.config.board_x;
   board->block_height = h / board->game.config.board_visible;
@@ -12,12 +14,13 @@ void load_tetris_board(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat 
   board->y_offset = y;
   board->block_offset = (board->game.config.board_y - board->game.config.board_visible);
 
-  update_rect(&board->skin.playboard, board->x_offset, board->y_offset - 10,
+  update_rect(&board->skin.playboard, board->x_offset, board->y_offset - 10 * RES_SCALE,
       board->game.config.board_x * board->block_width,
-      (board->game.config.board_visible * board->block_height) + 10,
+      (board->game.config.board_visible * board->block_height) + 10 * RES_SCALE,
       ui->window_width, ui->window_height);
 
-  update_rect(&board->skin.border, board->x_offset - 110, board->y_offset - 45, 380, 600,
+  update_rect(&board->skin.border, board->x_offset - (110 * RES_SCALE), 
+      board->y_offset - (45 * RES_SCALE), 380 * RES_SCALE, 600 * RES_SCALE,
       ui->window_width, ui->window_height);
 }
 
@@ -64,8 +67,8 @@ void draw_tetris_board(cetris_ui *ui) {
     GLfloat y_pos = (ui->board.y_offset - ui->board.block_height) + (y * ui->board.block_height);
     if (y == 0) {
       ui->board.skin.overlay.vertices[4] = ui->board.skin.overlay.vertices[9] = 0.6f;
-      height = 10;
-      y_pos += 15;
+      height = 10 * RES_SCALE;
+      y_pos += 15 * RES_SCALE;
     }
     set_shine(&ui->board.skin.overlay, ui->board.skin.overlay_shine);
     update_rect(&ui->board.skin.overlay, ui->board.x_offset, 
