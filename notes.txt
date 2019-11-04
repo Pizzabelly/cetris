@@ -43,3 +43,15 @@ counter clockwise:
 - 2 -> 1, 3
 - 3 -> 2, 5
 - 0 -> 3, 7
+
+gl optimization notes:
+- store board pieces in an array of vaos
+- make a structured clear even in the gameplay code
+  use this to update the vao array as well as animations
+- stuctued lock event for animation in gl frontend
+- store static skin elements in a seperate vao array 
+  update on screen resize 
+- make ui element for the current piece which is copied 
+  the board array on a lock event which leaves time to
+  edit the vertex buffer before copying it if it needs an
+  animation 
