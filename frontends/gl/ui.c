@@ -1,10 +1,9 @@
 #include <glad/glad.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "ui.h"
 #include "drawable.h"
-
-#define RES_SCALE 1.2
 
 void refresh_current(cetris_ui *ui) {
   for (int i = 0; i < 4; i++) {
@@ -39,17 +38,17 @@ void load_tetris_board(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat 
 
   refresh_current(ui);
 
-  update_rect(&board->skin.playboard, board->x_offset, board->y_offset - 10 * RES_SCALE,
+  update_rect(&board->skin.playboard, board->x_offset, board->y_offset - 10 * ui->res_scale,
       board->game.config.board_x * board->block_width,
-      (board->game.config.board_visible * board->block_height) + 10 * RES_SCALE,
+      (board->game.config.board_visible * board->block_height) + 10 * ui->res_scale,
       ui->window_width, ui->window_height);
 
-  update_rect(&board->skin.border, board->x_offset - (110 * RES_SCALE), 
-      board->y_offset - (45 * RES_SCALE), 380 * RES_SCALE, 600 * RES_SCALE,
+  update_rect(&board->skin.border, board->x_offset - (110 * ui->res_scale), 
+      board->y_offset - (45 * ui->res_scale), 380 * ui->res_scale, 600 * ui->res_scale,
       ui->window_width, ui->window_height);
 }
 
-void load_held_piece(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
+void load_held_piece(tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
   board->held.block_width = w / 4.0f;
   board->held.block_height = h / 4.0f;
 
@@ -57,7 +56,7 @@ void load_held_piece(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y,
   board->held.y_offset = y;
 }
 
-void load_piece_queue(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
+void load_piece_queue(tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
   board->queue.block_width = w / 4.0f;
   board->queue.block_height = w / 4.0f;
 
@@ -77,13 +76,11 @@ void update_current_drawable(cetris_ui *ui, drawable_t *current, drawable_t* gho
       if ((ui->board.game.current.m[s]>>(3 - j))&1) {
         cur_piece++;
 
-        GLfloat block_x = 
-          ui->board.x_offset + 
+        GLfloat block_x = ui->board.x_offset + 
           (j + ui->board.game.current.pos.x) * ui->board.block_width;
 
         if (ghost) {
-          GLfloat ghost_y = 
-            ui->board.y_offset + 
+          GLfloat ghost_y = ui->board.y_offset + 
             (s + ui->board.game.current.ghost_y - ui->board.block_offset) 
             * ui->board.block_height;
 
@@ -96,8 +93,7 @@ void update_current_drawable(cetris_ui *ui, drawable_t *current, drawable_t* gho
 
         if (s + ui->board.game.current.pos.y < ui->board.block_offset - 1) continue;
 
-        GLfloat block_y = 
-          ui->board.y_offset + 
+        GLfloat block_y = ui->board.y_offset + 
           (s + ui->board.game.current.pos.y - ui->board.block_offset)
           * ui->board.block_height;
 
@@ -113,20 +109,16 @@ void update_current_drawable(cetris_ui *ui, drawable_t *current, drawable_t* gho
 }
 
 void lock_current_drawable(cetris_ui *ui) {
-  for (int i = 0; i < 4; i++) {
-    new_rectangle(&ui->board.board[ui->board.board_count + i]);
-  }
-
   int current = 0;
   for (int s = 0; s < 4; s++) {
     for (int j = 0; j < 4; j++) {
       if ((ui->board.game.lock_event.m[s]>>(3 - j))&1) {
-        GLfloat block_x = 
-          ui->board.x_offset + 
+        new_rectangle(&ui->board.board[ui->board.board_count + current]);
+
+        GLfloat block_x = ui->board.x_offset + 
           (j + ui->board.game.lock_event.pos.x) * ui->board.block_width;
 
-        GLfloat block_y = 
-          ui->board.y_offset + 
+        GLfloat block_y = ui->board.y_offset + 
           (s + ui->board.game.lock_event.pos.y - ui->board.block_offset)
           * ui->board.block_height;
 
@@ -195,8 +187,8 @@ void draw_tetris_board(cetris_ui *ui) {
     GLfloat y_pos = (ui->board.y_offset - ui->board.block_height) + (y * ui->board.block_height);
     if (y == 0) {
       ui->board.skin.overlay.vertices[4] = ui->board.skin.overlay.vertices[9] = 0.6f;
-      height = 10 * RES_SCALE;
-      y_pos += 15 * RES_SCALE;
+      height = 10 * ui->res_scale;
+      y_pos += 15 * ui->res_scale;
     }
     set_shine(&ui->board.skin.overlay, ui->board.skin.overlay_shine);
     update_rect(&ui->board.skin.overlay, ui->board.x_offset, 

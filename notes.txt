@@ -55,3 +55,8 @@ gl optimization notes:
   the board array on a lock event which leaves time to
   edit the vertex buffer before copying it if it needs an
   animation 
+
+TODO:
+- more structured event system in the core lib 
+- add more sounds/skin elements and match them up to the new events
+- new minimal skin

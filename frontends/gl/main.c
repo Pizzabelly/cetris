@@ -20,9 +20,8 @@
 #include "events.h"
 
 #define SCREEN_FULLSCREEN 0
-#define RES_SCALE 1.2
-#define SCREEN_WIDTH 900 * RES_SCALE
-#define SCREEN_HEIGHT 720 * RES_SCALE
+#define SCREEN_WIDTH 900 
+#define SCREEN_HEIGHT 720
 
 static SDL_Window *window = NULL;
 static SDL_GLContext maincontext;
@@ -91,10 +90,19 @@ void load_config(cetris_ui *ui) {
       free(line_delay_clear);
     }
 
+    char *scale = get_ini_value(&p, "ui", "scale");
+    if (scale) {
+      ui->res_scale = atof(scale);
+      free(scale);
+    } else ui->res_scale = 1.0f;
+
+    ui->window_height = SCREEN_HEIGHT * ui->res_scale;
+    ui->window_width = SCREEN_WIDTH * ui->res_scale;
+
     char *skin = get_ini_value(&p, "ui", "skin");
     if (skin) {
-      load_skin(skin, &ui->board.skin);
-    } else load_skin("default", &ui->board.skin);
+      ui->skin_name = skin;
+    } else ui->skin_name = "default";
   }
 }
 
@@ -157,6 +165,11 @@ int main(void) {
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
   SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 
+  cetris_ui ui;
+  ui.keys = default_keys; 
+
+  load_config(&ui); 
+
   if (SCREEN_FULLSCREEN) {
     window = SDL_CreateWindow(
       "cetris", 
@@ -167,7 +180,7 @@ int main(void) {
     window = SDL_CreateWindow(
       "cetris", 
       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-      SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL
+      SCREEN_WIDTH * ui.res_scale, SCREEN_HEIGHT * ui.res_scale, SDL_WINDOW_OPENGL
     );
   }
 
@@ -181,13 +194,7 @@ int main(void) {
 
   SDL_GL_SetSwapInterval(1);
 
-  cetris_ui ui;
-  ui.window_height = SCREEN_HEIGHT;
-  ui.window_width = SCREEN_WIDTH;
-
-  ui.keys = default_keys; 
-
-  glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  glViewport(0, 0, SCREEN_WIDTH * ui.res_scale, SCREEN_HEIGHT * ui.res_scale);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -201,16 +208,17 @@ int main(void) {
   glUseProgram(shaderProgram);
   ui.shader_program = shaderProgram;
 
-  load_config(&ui);
   init_game(&ui.board.game);
   cetris_start_game(&ui.board.game);
-  
-  load_tetris_board(&ui, &ui.board, 325.0f * RES_SCALE, 
-      110.0f * RES_SCALE, 250.0f * RES_SCALE, 500.0f * RES_SCALE);
-  load_piece_queue(&ui, &ui.board, 610.0f * RES_SCALE, 
-      100.0f * RES_SCALE, 100.0f * RES_SCALE, 400.0f * RES_SCALE);
-  load_held_piece(&ui, &ui.board, 242.0f * RES_SCALE, 
-      110.0f * RES_SCALE, 88.0f * RES_SCALE, 88.0f * RES_SCALE);  
+ 
+  load_skin(ui.skin_name, &ui.board.skin);
+
+  load_tetris_board(&ui, &ui.board, 325.0f * ui.res_scale, 
+      110.0f * ui.res_scale, 250.0f * ui.res_scale, 500.0f * ui.res_scale);
+  load_piece_queue(&ui.board, 610.0f * ui.res_scale, 
+      100.0f * ui.res_scale, 100.0f * ui.res_scale, 400.0f * ui.res_scale);
+  load_held_piece( &ui.board, 242.0f * ui.res_scale, 
+      110.0f * ui.res_scale, 88.0f * ui.res_scale, 88.0f * ui.res_scale);  
 
   start_event_thread(&ui);
 
