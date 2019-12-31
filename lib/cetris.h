@@ -71,6 +71,13 @@ typedef struct {
   piece_matrix m;
 } tetrimino;
 
+typedef struct {
+  vec2 pos;
+  uint8_t t;
+  piece_matrix m;
+  bool processed;
+} lock_event_t;
+
 typedef struct cetris_game cetris_game;
 
 typedef struct {
@@ -146,10 +153,11 @@ struct cetris_game {
 
   // events 
   uint8_t move_event;
-  uint8_t line_event;
   uint8_t combo_event;
-  uint8_t lock_event;
   uint8_t tetris_event;
+  uint8_t line_event;
+
+  lock_event_t lock_event;
 
   // scoring flags
   bool tspin;

@@ -20,15 +20,17 @@ void handle_game_event(cetris_ui *ui) {
     cetris_start_game(&ui->board.game);
   }
 
-  if (ui->board.game.lock_event > 0) {
+  if (!ui->board.game.lock_event.processed) {
     Mix_PlayChannel( 1, ui->board.skin.lock_sound, 0 );
-    ui->board.game.lock_event--;
+    ui->board.game.lock_event.processed = true;
+    ui->board.lock_current = true;
   }
 
   if (ui->board.game.line_event > 0) {
     int index = ui->board.game.line_event - 1;
     ui->board.skin.overlay_shine = 0.25f;
     Mix_PlayChannel( 1, ui->board.skin.clear_sound[index], 0 );
+    ui->board.refresh_board = true;
     ui->board.game.line_event = 0;
   }
 
@@ -49,6 +51,7 @@ void handle_game_event(cetris_ui *ui) {
 
   if (ui->board.game.move_event > 0) {
     Mix_PlayChannel( 0, ui->board.skin.move_sound, 0);
+    ui->board.update_current = true;
     ui->board.game.move_event--;
   }
 }

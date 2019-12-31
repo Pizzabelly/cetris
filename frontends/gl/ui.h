@@ -33,6 +33,16 @@ typedef struct {
   GLfloat y_offset;
 
   cetris_game game;
+  
+  drawable_t *board;
+  int board_count;
+
+  bool lock_current;
+  bool update_current;
+  bool refresh_board;
+
+  drawable_t current[4];
+  drawable_t ghost[4];
 
   held_piece_t held;
   piece_queue_t queue;
@@ -68,6 +78,7 @@ void draw_tetris_board(cetris_ui *ui);
 void draw_held_piece(cetris_ui *ui);
 void draw_piece_queue(cetris_ui *ui);
 void draw_current(cetris_ui *ui);
+void update_board_drawables(cetris_ui *ui);
 void load_tetris_board(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h);
 void load_held_piece(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h);
 void load_piece_queue(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat y, GLfloat w, GLfloat h);

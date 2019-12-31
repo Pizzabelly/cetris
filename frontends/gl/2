@@ -6,10 +6,17 @@
 
 #define RES_SCALE 1.2
 
+void reset_current(cetris_ui *ui) {
+  for (int i = 0; i < 4; i++) {
+    new_rectangle(&ui->board.current[i]);
+    new_rectangle(&ui->board.ghost[i]);
+  }
+}
+
 void refresh_current(cetris_ui *ui) {
   for (int i = 0; i < 4; i++) {
-    ui->board.ghost[i].visable = false;
     ui->board.current[i].visable = false;
+    ui->board.ghost[i].visable = false;
   }
 }
 
@@ -27,17 +34,13 @@ void load_tetris_board(cetris_ui *ui, tetris_board_t *board, GLfloat x, GLfloat 
 
   board->update_current = false;
   board->lock_current = false;
-  board->refresh_board = false;
+  board->refresh_board_current = false;
 
   memset(&ui->board.current, 0, sizeof(drawable_t) * 4);
   memset(&ui->board.ghost, 0, sizeof(drawable_t) * 4);
   
-  for (int i = 0; i < 4; i++) {
-    new_rectangle(&ui->board.current[i]);
-    new_rectangle(&ui->board.ghost[i]);
-  }
-
   refresh_current(ui);
+  reset_current(ui);
 
   update_rect(&board->skin.playboard, board->x_offset, board->y_offset - 10 * RES_SCALE,
       board->game.config.board_x * board->block_width,
@@ -135,21 +138,33 @@ void lock_current_drawable(cetris_ui *ui) {
             ui->board.block_width, ui->board.block_height,
             ui->window_width, ui->window_height);
 
+        // TODO: fix this
+        ui->board.board[ui->board.board_count + current].y = ui->board.game.lock_event.pos.y + s;
+
         ui->board.board_count++;
       }
     }
   }
+
+  ui->board.game.lock_event.processed = true;
 }
 
 void refresh_board(cetris_ui *ui) {
   ui->board.board_count = 0;
   for (int s = 0; s < ui->board.game.config.board_x; s++) {
     for (int j = 0; j < ui->board.game.config.board_y; j++) {
-      if (ui->board.game.board[s][j] & SLOT_OCCUPIED) {
-        set_block_texture(&ui->board.board[ui->board.board_count], ui->board.game.board[s][j] >> 5);
-        update_rect(&ui->board.board[ui->board.board_count++], 
-            ui->board.x_offset + (s * ui->board.block_width),
-            ui->board.y_offset + ((j - ui->board.block_offset) * ui->board.block_height),
+      if (ui->board.game.board[s][y] & SLOT_OCCUPIED) {
+        GLfloat block_x = 
+          ui->board.x_offset + 
+          (j + ui->board.game.lock_event.pos.x) * ui->board.block_width;
+
+        GLfloat block_y = 
+          ui->board.y_offset + 
+          (s + ui->board.game.lock_event.pos.y - ui->board.block_offset)
+          * ui->board.block_height;
+
+        set_block_texture(&ui->board.board[ui->board.board_count], ui->board.game.lock_event.t);
+        update_rect(&ui->board.board[ui->board.board_count++], block_x, block_y, 
             ui->board.block_width, ui->board.block_height,
             ui->window_width, ui->window_height);
       }
@@ -171,6 +186,19 @@ void draw_tetris_board(cetris_ui *ui) {
   if (ui->board.refresh_board) {
     refresh_board(ui);
     ui->board.refresh_board = false;
+  }
+
+  if (ui->board.game.line_event_count > 0) {
+    for (int i = 0; i < ui->board.board_count; i++) {
+      for (int j = 0; j < ui->board.game.line_event_count; j++) {
+        if (ui->board.board[i].y == ui->board.game.line_event[j].y) {
+          for (int s = i; s < ui->board.board_count; s++) {
+            ui->board.board[s] = ui->board.board[s + 1];
+          }
+        }
+      }
+    }
+    ui->board.game.line_event_count = 0;
   }
 
   glActiveTexture(GL_TEXTURE0);

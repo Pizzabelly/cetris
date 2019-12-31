@@ -147,7 +147,7 @@ int main(void) {
     printf("error\n");
   }
 
-  Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 512);
+  Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 256);
   Mix_AllocateChannels(4);
   Mix_Volume(0, 20);
   Mix_Volume(1, 70); 

@@ -12,6 +12,8 @@ typedef struct {
   GLfloat w;
   GLfloat h;
 
+  bool visable;
+
   GLfloat *vertices;
 } drawable_t;
 

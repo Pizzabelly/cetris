@@ -226,7 +226,11 @@ static void lock_current(cetris_game *g) {
     g->highest_line = g->current.pos.y;
   }
 
-  g->lock_event++;
+  g->lock_event.processed = false;
+  g->lock_event.pos = g->current.pos;
+  g->lock_event.t = g->current.t;
+  memcpy(&g->lock_event.m, &g->current.m, sizeof(piece_matrix));
+
   g->current.locked = true;
   update_board(g);
 }
@@ -329,6 +333,8 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
         else g->tspin = true;
       }
     }
+
+    g->move_event++;
 
     g->current.r = next;
     memcpy(g->current.m, &m, sizeof(piece_matrix));
