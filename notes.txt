@@ -56,6 +56,10 @@ gl optimization notes:
   edit the vertex buffer before copying it if it needs an
   animation 
 
+FIXES:
+- hold needs to trigger update
+- restarting needs to update the board drawable
+
 TODO:
 - more structured event system in the core lib 
 - add more sounds/skin elements and match them up to the new events

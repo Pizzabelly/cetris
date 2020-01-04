@@ -62,7 +62,7 @@ void update_rect(drawable_t *drawable, GLfloat x, GLfloat y,
 }
 
 void new_rectangle(drawable_t* drawable) {
-  drawable->vertices = malloc(sizeof(vertices));
+  drawable->vertices = (GLfloat *)malloc(sizeof(vertices));
   memcpy(drawable->vertices, &vertices[0], sizeof(vertices));
 
   glGenVertexArrays(1, &drawable->vao);

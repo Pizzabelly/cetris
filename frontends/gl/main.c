@@ -215,9 +215,12 @@ int main(void) {
 
   load_tetris_board(&ui, &ui.board, 325.0f * ui.res_scale, 
       110.0f * ui.res_scale, 250.0f * ui.res_scale, 500.0f * ui.res_scale);
-  load_piece_queue(&ui.board, 610.0f * ui.res_scale, 
+  
+  load_scene(&ui);
+
+  load_piece_queue(&ui, 610.0f * ui.res_scale, 
       100.0f * ui.res_scale, 100.0f * ui.res_scale, 400.0f * ui.res_scale);
-  load_held_piece( &ui.board, 242.0f * ui.res_scale, 
+  load_held_piece(&ui, 242.0f * ui.res_scale, 
       110.0f * ui.res_scale, 88.0f * ui.res_scale, 88.0f * ui.res_scale);  
 
   start_event_thread(&ui);
@@ -231,8 +234,8 @@ int main(void) {
     }
     
     draw_tetris_board(&ui);
-    draw_held_piece(&ui);
-    draw_piece_queue(&ui);
+    //draw_held_piece(&ui);
+    //draw_piece_queue(&ui);
 
     SDL_GL_SwapWindow(window);
   }
