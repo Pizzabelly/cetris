@@ -41,6 +41,3 @@ cetris_config tetris_ds_config = {
   .levels = &tetris_worlds_levels[0],
   .win_condition = marathon
 };
-
-
-

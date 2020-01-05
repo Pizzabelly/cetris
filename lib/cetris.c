@@ -14,43 +14,38 @@
 /* DEFAULT TETRIMINO */
 
 CETRIS_EXPORT const piece_matrix default_matrices[7] = {
-    { 0b0000, 0b1100, 0b0110, 0b0000},
-    { 0b0000, 0b0010, 0b1110, 0b0000},
-    { 0b0000, 0b0110, 0b0110, 0b0000},
-    { 0b0000, 0b0110, 0b1100, 0b0000},
-    { 0b0000, 0b1111, 0b0000, 0b0000},
-    { 0b0000, 0b1000, 0b1110, 0b0000},
+    { 0b0000, 0b1100, 0b0110, 0b0000}, { 0b0000, 0b0010, 0b1110, 0b0000},
+    { 0b0000, 0b0110, 0b0110, 0b0000}, { 0b0000, 0b0110, 0b1100, 0b0000},
+    { 0b0000, 0b1111, 0b0000, 0b0000}, { 0b0000, 0b1000, 0b1110, 0b0000},
     { 0b0000, 0b0100, 0b1110, 0b0000}};
 
 /* SRS WALL KICK VALUES */
 
 // https://tetris.wiki/SRS
 static const vec2 srs_wall_kicks[8][5] = {
-    {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 0->R
-    {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->0
-    {{0, 0}, {1, 0}, {1, -1}, {0, 2}, {1, 2}},     // R->2
-    {{0, 0}, {-1, 0}, {-1, 1}, {0, -2}, {-1, -2}}, // 2->R
-    {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}},    // 2->L
-    {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->2
-    {{0, 0}, {-1, 0}, {-1, -1}, {0, 2}, {-1, 2}},  // L->0
-    {{0, 0}, {1, 0}, {1, 1}, {0, -2}, {1, -2}}     // 0->L
+    {{0, 0}, {-1, 0}, {-1, 1},  {0, -2}, {-1, -2}}, // 0->R
+    {{0, 0}, {1, 0},  {1, -1},  {0, 2},  {1, 2}},   // R->0
+    {{0, 0}, {1, 0},  {1, -1},  {0, 2},  {1, 2}},   // R->2
+    {{0, 0}, {-1, 0}, {-1, 1},  {0, -2}, {-1, -2}}, // 2->R
+    {{0, 0}, {1, 0},  {1, 1},   {0, -2}, {1, -2}},  // 2->L
+    {{0, 0}, {-1, 0}, {-1, -1}, {0, 2},  {-1, 2}},  // L->2
+    {{0, 0}, {-1, 0}, {-1, -1}, {0, 2},  {-1, 2}},  // L->0
+    {{0, 0}, {1, 0},  {1, 1},   {0, -2}, {1, -2}}   // 0->L
 };
 
 static const vec2 srs_wall_kicks_i[8][5] = {
-    {{0, 0}, {-2, 0}, {1, 0}, {-2, -1}, {1, 2}}, // 0->R
-    {{0, 0}, {2, 0}, {-1, 0}, {2, 1}, {-1, -2}}, // R->0
-    {{0, 0}, {-1, 0}, {2, 0}, {-1, 2}, {2, -1}}, // R->2
-    {{0, 0}, {1, 0}, {-2, 0}, {1, -2}, {-2, 1}}, // 2->R
-    {{0, 0}, {2, 0}, {-1, 0}, {2, 1}, {-1, -2}}, // 2->L
-    {{0, 0}, {-2, 0}, {1, 0}, {-2, -1}, {1, 2}}, // L->2
-    {{0, 0}, {1, 0}, {-2, 0}, {1, -2}, {-2, 1}}, // L->0
-    {{0, 0}, {-1, 0}, {2, 0}, {-1, 2}, {2, -1}}  // 0->L
+    {{0, 0}, {-2, 0}, {1, 0},  {-2, -1}, {1, 2}},   // 0->R
+    {{0, 0}, {2, 0},  {-1, 0}, {2, 1},   {-1, -2}}, // R->0
+    {{0, 0}, {-1, 0}, {2, 0},  {-1, 2},  {2, -1}},  // R->2
+    {{0, 0}, {1, 0},  {-2, 0}, {1, -2},  {-2, 1}},  // 2->R
+    {{0, 0}, {2, 0},  {-1, 0}, {2, 1},   {-1, -2}}, // 2->L
+    {{0, 0}, {-2, 0}, {1, 0},  {-2, -1}, {1, 2}},   // L->2
+    {{0, 0}, {1, 0},  {-2, 0}, {1, -2},  {-2, 1}},  // L->0
+    {{0, 0}, {-1, 0}, {2, 0},  {-1, 2},  {2, -1}}   // 0->L
 };
 
-static const vec2 basic_movements[5] = {
-    {0, 1}, // DOWN
-    {1, 0}, // RIGHT
-    {-1, 0} // LEFT
+static const vec2 basic_movements[3] = {
+    {0, 1}, {1, 0}, {-1, 0} // DOWN, RIGHT, LEFT
 };
 
 static void update_board(cetris_game *g);
@@ -79,19 +74,17 @@ static void shuffle_queue(cetris_game *g) {
 }
 
 static int check_matrix(cetris_game *g, piece_matrix *m) {
-  for (uint8_t y = 0; y < 4; y++) {
-    for (uint8_t x = 0; x < 4; x++) {
-      vec2 r = (vec2){x + g->current.pos.x, y + g->current.pos.y};
-      if (r.y < 0)
-        continue;
-      if (((*m)[y]>>(3 - x))&1) {
-        if (r.x >= g->config.board_x || r.x < 0)
-          return 0;
-        if (r.y >= g->config.board_y)
-          return -1;
-        if (g->board[r.x][r.y] & SLOT_OCCUPIED)
-          return -1;
-      }
+  ITER_MATRIX {
+    vec2 r = (vec2){j + g->current.pos.x, s + g->current.pos.y};
+    if (r.y < 0)
+      continue;
+    if (((*m)[s]>>(3 - j))&1) {
+      if (r.x >= g->config.board_x || r.x < 0)
+        return 0;
+      if (r.y >= g->config.board_y)
+        return -1;
+      if (g->board[r.x][r.y] & SLOT_OCCUPIED)
+        return -1;
     }
   }
   return 1;
@@ -213,12 +206,10 @@ static void next_piece(cetris_game *g) {
 }
 
 static void lock_current(cetris_game *g) {
-  for (int y = 0; y < 4; y++) {
-    for (int x = 0; x < 4; x++) {
-      if ((g->current.m[y]>>(3 - x))&1) {
-        g->board[g->current.pos.x + x][g->current.pos.y + y] |= SLOT_OCCUPIED;
-        g->board[g->current.pos.x + x][g->current.pos.y + y] |= g->current.t << 5;
-      }
+  ITER_MATRIX {
+    if ((g->current.m[s]>>(3 - j))&1) {
+      g->board[g->current.pos.x + j][g->current.pos.y + s] |= SLOT_OCCUPIED;
+      g->board[g->current.pos.x + j][g->current.pos.y + s] |= g->current.t << 5;
     }
   }
 
@@ -253,18 +244,16 @@ static void hard_drop(cetris_game *g) {
 }
 
 static void rotate_matrix(cetris_game *g, piece_matrix *m, bool clockwise) {
-  for (uint8_t x = 0; x < 4; x++) {
-    for (uint8_t y = 0; y < 4; y++) {
-      if ((g->current.m[y]>>(3 - x))&1) {
-        uint8_t new_x = (clockwise) ? 1 - (y - 2) : 1 + (y - 2);
-        uint8_t new_y = (clockwise) ? 2 + (x - 1) : 2 - (x - 1);
+  ITER_MATRIX {
+    if ((g->current.m[s]>>(3 - j))&1) {
+      uint8_t new_x = (clockwise) ? 1 - (s - 2) : 1 + (s - 2);
+      uint8_t new_y = (clockwise) ? 2 + (j - 1) : 2 - (j - 1);
 
-        if (g->current.t == MINO_I) {
-          clockwise ? new_y-- : new_x++;
-        }
-        
-        (*m)[new_y] |= (uint8_t)0b1000 >> (new_x);
+      if (g->current.t == MINO_I) {
+        clockwise ? new_y-- : new_x++;
       }
+      
+      (*m)[new_y] |= (uint8_t)0b1000 >> (new_x);
     }
   }
 }
@@ -275,13 +264,12 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
   if (g->current.t == MINO_O)
     return;
   
-  uint8_t next = 0;
-  uint8_t wall_kick = 0;
+  uint8_t next = 0, wall_kick = 0;
   if (clockwise) {
-    next = (g->current.r + 1)%4;
+    next = (g->current.r + 1) % 4;
     wall_kick = g->current.r * 2;
   } else {
-    next = ((g->current.r - 1) + 4)%4;
+    next = ((g->current.r - 1) + 4) % 4;
     wall_kick = (next * 2) + 1;
   }
 
@@ -291,8 +279,7 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
   rotate_matrix(g, &m, clockwise);
 
   vec2 kick;
-  bool set_current = false;
-  bool did_kick = false;
+  bool set_current = false, did_kick = false;
   for (int i = 0; i < 4; i++) {
     if (g->current.t == MINO_I) {
       kick = srs_wall_kicks_i[wall_kick][i];
@@ -317,7 +304,7 @@ static void rotate_piece(cetris_game *g, bool clockwise) {
     /* check for tspin */
     if (g->current.t == MINO_T) {
       bool did_tspin = true;
-      for (int i = 1; i < 5; i++) {
+      for (int i = 1; i < 3; i++) {
         g->current.pos.x += basic_movements[i].x;
         g->current.pos.y += basic_movements[i].y;
 
@@ -481,7 +468,6 @@ CETRIS_EXPORT void move_piece(cetris_game *g, uint8_t move) {
     rotate_piece(g, 0);
     break;
   }
-
 }
 
 CETRIS_EXPORT void init_game(cetris_game *g) {

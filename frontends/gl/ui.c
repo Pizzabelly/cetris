@@ -85,36 +85,32 @@ void load_scene(cetris_ui *ui) {
 void load_held_piece(cetris_ui *ui, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
   if (!ui->board.game.piece_held) return;
 
-  GLfloat block_width = w / 4.0f;
-  GLfloat block_height = h / 4.0f;
+  GLfloat block_width = w / 4.0f, block_height = h / 4.0f;
 
-  for (int s = 0; s < 4; s++) {
-    for (int j = 0; j < 4; j++) {
-      if ((ui->board.game.held.m[s]>>(3 - j))&1) {
-        new_rectangle(&ui->scene[ui->scene_count]);
+  ITER_MATRIX {
+    if ((ui->board.game.held.m[s]>>(3 - j))&1) {
+      new_rectangle(&ui->scene[ui->scene_count]);
 
-        GLfloat block_x = x + (j * block_width);
-        GLfloat block_y = y + (s * block_height);
+      GLfloat block_x = x + (j * block_width);
+      GLfloat block_y = y + (s * block_height);
 
-        if (ui->board.game.held.t == MINO_O) 
-          block_x -= block_width / 1.5f;
+      if (ui->board.game.held.t == MINO_O) 
+        block_x -= block_width / 1.5f;
 
-        if (ui->board.game.held.t == MINO_I) 
-          block_x -= block_width / 1.5f;
+      if (ui->board.game.held.t == MINO_I) 
+        block_x -= block_width / 1.5f;
 
-        set_block_texture(&ui->scene[ui->scene_count], ui->board.game.held.t);
-        update_rect(&ui->scene[ui->scene_count], block_x, block_y, 
-            block_width, block_height, ui->window_width, ui->window_height);
-        
-        ui->scene[ui->scene_count++].texture = ui->board.skin.block.texture;
-      }
+      set_block_texture(&ui->scene[ui->scene_count], ui->board.game.held.t);
+      update_rect(&ui->scene[ui->scene_count], block_x, block_y, 
+          block_width, block_height, ui->window_width, ui->window_height);
+      
+      ui->scene[ui->scene_count++].texture = ui->board.skin.block.texture;
     }
   }
 }
 
 void load_piece_queue(cetris_ui *ui, GLfloat x, GLfloat y, GLfloat w, GLfloat h) {
-  GLfloat block_width = w / 4.0f;
-  GLfloat block_height = w / 4.0f;
+  GLfloat block_width = w / 4.0f, block_height = w / 4.0f;
 
   for (int i = 0; i < 5; i++) {
     int mino, index = (ui->board.game.current_index + i);
@@ -126,26 +122,24 @@ void load_piece_queue(cetris_ui *ui, GLfloat x, GLfloat y, GLfloat w, GLfloat h)
       mino = ui->board.game.next_queue[index];
     }
 
-    for (int s = 0; s < 4; s++) {
-      for (int j = 0; j < 4; j++) {
-        if ((default_matrices[mino][s]>>(3 - j))&1) {
-          new_rectangle(&ui->scene[ui->scene_count]);
+    ITER_MATRIX {
+      if ((default_matrices[mino][s]>>(3 - j))&1) {
+        new_rectangle(&ui->scene[ui->scene_count]);
 
-          GLfloat block_x = x + (j * block_width);
-          GLfloat block_y = y + (h * (i / 5.0)) + (s * block_height);
+        GLfloat block_x = x + (j * block_width);
+        GLfloat block_y = y + (h * (i / 5.0)) + (s * block_height);
 
-          if (ui->board.game.held.t == MINO_O) 
-            block_x -= block_width / 1.5f;
+        if (ui->board.game.held.t == MINO_O) 
+          block_x -= block_width / 1.5f;
 
-          if (ui->board.game.held.t == MINO_I)
-            block_x -= block_width / 1.5f;
+        if (ui->board.game.held.t == MINO_I)
+          block_x -= block_width / 1.5f;
 
-          set_block_texture(&ui->scene[ui->scene_count], mino);
-          update_rect(&ui->scene[ui->scene_count], block_x, block_y, 
-              block_width, block_height, ui->window_width, ui->window_height);
+        set_block_texture(&ui->scene[ui->scene_count], mino);
+        update_rect(&ui->scene[ui->scene_count], block_x, block_y, 
+            block_width, block_height, ui->window_width, ui->window_height);
 
-          ui->scene[ui->scene_count++].texture = ui->board.skin.block.texture;
-        }
+        ui->scene[ui->scene_count++].texture = ui->board.skin.block.texture;
       }
     }
   }
@@ -154,72 +148,60 @@ void load_piece_queue(cetris_ui *ui, GLfloat x, GLfloat y, GLfloat w, GLfloat h)
 // TODO: make this better
 void update_current_drawable(cetris_ui *ui, drawable_t *current, drawable_t* ghost) {
   refresh_current(ui);
-  int cur_piece = -1;
-  for (int s = 0; s < 4; s++) {
-    for (int j = 0; j < 4; j++) {
-      if ((ui->board.game.current.m[s]>>(3 - j))&1) {
-        cur_piece++;
+  int cur_piece = -1; ITER_MATRIX {
+    if ((ui->board.game.current.m[s]>>(3 - j))&1) {
+      cur_piece++;
 
-        GLfloat block_x = ui->board.x_offset + 
-          (j + ui->board.game.current.pos.x) * ui->board.block_width;
+      GLfloat block_x = ui->board.x_offset + (j + ui->board.game.current.pos.x)
+        * ui->board.block_width;
 
-        if (ghost) {
-          GLfloat ghost_y = ui->board.y_offset + 
-            (s + ui->board.game.current.ghost_y - ui->board.block_offset) 
-            * ui->board.block_height;
+      if (ghost) {
+        GLfloat ghost_y = ui->board.y_offset + (s + ui->board.game.current.ghost_y 
+            - ui->board.block_offset) * ui->board.block_height;
 
-          ghost[cur_piece].visable = true;
-          set_block_texture(&ghost[cur_piece], ui->board.game.current.t + 7);
-          update_rect(&ghost[cur_piece], block_x, ghost_y, 
-              ui->board.block_width, ui->board.block_height,
-              ui->window_width, ui->window_height);
-        }
-
-        if (s + ui->board.game.current.pos.y < ui->board.block_offset - 1) continue;
-
-        GLfloat block_y = ui->board.y_offset + 
-          (s + ui->board.game.current.pos.y - ui->board.block_offset)
-          * ui->board.block_height;
-
-        current[cur_piece].visable = true;
-        set_block_texture(&current[cur_piece], ui->board.game.current.t);
-        update_rect(&current[cur_piece], block_x, block_y, 
-            ui->board.block_width, ui->board.block_height,
-            ui->window_width, ui->window_height);
-
+        ghost[cur_piece].visable = true;
+        set_block_texture(&ghost[cur_piece], ui->board.game.current.t + 7);
+        update_rect(&ghost[cur_piece], block_x, ghost_y, ui->board.block_width, 
+            ui->board.block_height, ui->window_width, ui->window_height);
       }
+
+      if (s + ui->board.game.current.pos.y < ui->board.block_offset - 1) continue;
+
+      GLfloat block_y = ui->board.y_offset + (s + ui->board.game.current.pos.y 
+          - ui->board.block_offset) * ui->board.block_height;
+
+      current[cur_piece].visable = true;
+      set_block_texture(&current[cur_piece], ui->board.game.current.t);
+      update_rect(&current[cur_piece], block_x, block_y, ui->board.block_width, 
+          ui->board.block_height, ui->window_width, ui->window_height);
     }
   }
 }
 
 void lock_current_drawable(cetris_ui *ui) {
-  int current = 0;
-  for (int s = 0; s < 4; s++) {
-    for (int j = 0; j < 4; j++) {
-      if ((ui->board.game.lock_event.m[s]>>(3 - j))&1) {
-        new_rectangle(&ui->board.board[ui->board.board_count + current]);
+  int current = 0; ITER_MATRIX {
+    if ((ui->board.game.lock_event.m[s]>>(3 - j))&1) {
+      new_rectangle(&ui->board.board[ui->board.board_count + current]);
 
-        GLfloat block_x = ui->board.x_offset + 
-          (j + ui->board.game.lock_event.pos.x) * ui->board.block_width;
+      GLfloat block_x = ui->board.x_offset + 
+        (j + ui->board.game.lock_event.pos.x) * ui->board.block_width;
 
-        GLfloat block_y = ui->board.y_offset + 
-          (s + ui->board.game.lock_event.pos.y - ui->board.block_offset)
-          * ui->board.block_height;
+      GLfloat block_y = ui->board.y_offset + 
+        (s + ui->board.game.lock_event.pos.y - ui->board.block_offset)
+        * ui->board.block_height;
 
-        set_block_texture(&ui->board.board[ui->board.board_count + current], ui->board.game.lock_event.t);
-        update_rect(&ui->board.board[ui->board.board_count + current], block_x, block_y, 
-            ui->board.block_width, ui->board.block_height,
-            ui->window_width, ui->window_height);
+      set_block_texture(&ui->board.board[ui->board.board_count + current], ui->board.game.lock_event.t);
+      update_rect(&ui->board.board[ui->board.board_count + current], block_x, block_y, 
+          ui->board.block_width, ui->board.block_height,
+          ui->window_width, ui->window_height);
 
-        ui->board.board_count++;
-      }
+      ui->board.board_count++;
     }
   }
 }
 
 void refresh_board(cetris_ui *ui) {
   ui->board.board_count = 0;
-
   for (int s = 0; s < ui->board.game.config.board_x; s++) {
     for (int j = 0; j < ui->board.game.config.board_y; j++) {
       if (ui->board.game.board[s][j] & SLOT_OCCUPIED) {

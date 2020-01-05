@@ -22,6 +22,10 @@ typedef uint16_t ctick;
 
 #define CETRIS_ENABLE_DAS 1
 
+#define ITER_MATRIX \
+  for (uint8_t j = 0; j < 4; j++) \
+    for (uint8_t s = 0; s < 4; s++)
+
 typedef struct {
   int8_t x;
   int8_t y;
