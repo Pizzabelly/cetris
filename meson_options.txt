@@ -1,3 +1,3 @@
 option('curses-frontend', type : 'boolean', value : false)
-option('gl-frontend', type : 'boolean', value : true)
+option('gl-frontend', type : 'boolean', value : false)
 option('sdl-frontend', type : 'boolean', value : false)

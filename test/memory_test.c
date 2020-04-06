@@ -1,11 +1,11 @@
 #include <stdio.h>
 
-#include <cetris.h>
+#include "../lib/cetris.h"
 
 int main(void) {
-  cetris_game game;
+  ctrs_game game;
 
-  init_game(&game);
+  ctrs_init_game(&game);
 
   printf("memory usage of game instance: %li\n", sizeof(game));
 

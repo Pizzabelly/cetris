@@ -60,7 +60,12 @@ FIXES:
 - hold needs to trigger update
 - restarting needs to update the board drawable
 
+MUTEX:
+- give timer a mutex and move game update to another thread
+
 TODO:
+- make scene system, then generic tetris board seperate
+- fix ordering of main scene
 - more structured event system in the core lib 
 - add more sounds/skin elements and match them up to the new events
 - new minimal skin
